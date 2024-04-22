@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Altcha.Net", "Altcha.Net\Altcha.Net.csproj", "{A53D0849-02EA-44CA-B7CB-3D32DE4AD98F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Altcha.Net.Tests", "Altcha.Net.Tests\Altcha.Net.Tests.csproj", "{BD430AA7-C8ED-4134-86C8-C3EB1BC90AB6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Altcha.Net.EndToEndTestProject", "Altcha.Net.EndToEndTestProject\Altcha.Net.EndToEndTestProject.csproj", "{025EC1DC-DD54-4F1A-AC90-63D44DED01C4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A53D0849-02EA-44CA-B7CB-3D32DE4AD98F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A53D0849-02EA-44CA-B7CB-3D32DE4AD98F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A53D0849-02EA-44CA-B7CB-3D32DE4AD98F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A53D0849-02EA-44CA-B7CB-3D32DE4AD98F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD430AA7-C8ED-4134-86C8-C3EB1BC90AB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD430AA7-C8ED-4134-86C8-C3EB1BC90AB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD430AA7-C8ED-4134-86C8-C3EB1BC90AB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD430AA7-C8ED-4134-86C8-C3EB1BC90AB6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{025EC1DC-DD54-4F1A-AC90-63D44DED01C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{025EC1DC-DD54-4F1A-AC90-63D44DED01C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{025EC1DC-DD54-4F1A-AC90-63D44DED01C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{025EC1DC-DD54-4F1A-AC90-63D44DED01C4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
