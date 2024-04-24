@@ -1,0 +1,15 @@
+{
+  "stryker-config": {
+    "mutation-level": "Standard",
+    "thresholds": {
+      "break": 100
+    },
+    "verbosity": "info",
+    "reporters": [
+      "Progress",
+      "Html"
+    ],
+    "report-file-name": "mutation-tests",
+    "break-on-initial-test-failure": false
+  }
+}

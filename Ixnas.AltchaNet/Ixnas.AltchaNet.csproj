@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageId>Ixnas.AltchaNet</PackageId>
+        <Description>Server-side implementation of the ALTCHA challenge.</Description>
+        <Copyright>Copyright (c) 2024 Sjoerd Scheffer</Copyright>
+        <PackageProjectUrl>https://github.com/ixnas/altcha-dotnet</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/ixnas/altcha-dotnet.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>captcha, altcha, anti-spam, spam, security</PackageTags>
+        <Authors>Sjoerd Scheffer</Authors>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="System.Text.Json" Version="4.6.0"/>
+        <None Include="..\README.md" Pack="true" PackagePath=""/>
+        <None Include="..\LICENSE.txt" Pack="true" PackagePath=""/>
+        <None Include="..\LICENSE-ALTCHA.txt" Pack="true" PackagePath=""/>
+    </ItemGroup>
+
+</Project>

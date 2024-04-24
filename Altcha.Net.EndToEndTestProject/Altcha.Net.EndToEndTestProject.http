@@ -1,6 +1,0 @@
-@Altcha.Net.EndToEndTestProject_HostAddress = http://localhost:5061
-
-GET {{Altcha.Net.EndToEndTestProject_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
