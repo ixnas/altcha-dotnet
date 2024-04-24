@@ -1,8 +1,10 @@
 # Altcha.NET
 
+[![Build Status](https://ci.sjoerdscheffer.nl/job/Altcha.NET/job/main/badge/icon?style=flat-square)](https://ci.sjoerdscheffer.nl/job/Altcha.NET/job/main/)
+
 Server-side implementation of the [ALTCHA](http://altcha.org) challenge in C#.
 
-Features:
+### Features
 
 - Compatible with the [ALTCHA client-side widget](https://altcha.org/docs/website-integration/#using-altcha-widget)
 - Independent from ASP.NET (Core)
@@ -105,7 +107,7 @@ if (!validationResult.IsValid)
 The `altchaBase64` parameter represents the raw value from the `altcha` field in a submitted form, so you don't need to
 convert anything.
 
-You can run and examine the `AspNetCoreExample` ASP.NET Core project as a minimal example.
+You can run and examine the `AspNetCoreExample` project as a minimal example.
 
 ## License
 
