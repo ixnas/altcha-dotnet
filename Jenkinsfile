@@ -47,7 +47,7 @@ pipeline {
                 archiveArtifacts artifacts: "artifacts/reports/Ixnas.AltchaNet-${GIT_VERSION}-mutation-tests.zip"
             }
         }
-        stage('Package (development)') {
+        stage('Package') {
             agent { label 'windows' }
             options { skipDefaultCheckout() }
             environment {
@@ -59,6 +59,23 @@ pipeline {
             steps {
                 bat "dotnet pack Ixnas.AltchaNet -o artifacts\\ -p:PackageVersion=${GIT_VERSION}"
                 archiveArtifacts artifacts: "artifacts/Ixnas.AltchaNet.${GIT_VERSION}.nupkg"
+            }
+        }
+        stage('Publish') {
+            agent { label 'windows' }
+            options { skipDefaultCheckout() }
+            when {
+                buildingTag()
+                beforeAgent true
+            }
+            environment {
+                GIT_VERSION = """${bat(
+                    returnStdout: true,
+                    script: '@git describe --tags'
+                ).trim()}"""
+            }
+            steps {
+                bat "dotnet nuget push artifacts\\Ixnas.AltchaNet.${GIT_VERSION}.nupkg --api-key ${NUGET_API_KEY} --source https://api.nuget.org/v3/index.json"
             }
         }
     }
