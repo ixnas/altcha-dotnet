@@ -1,8 +1,18 @@
 pipeline {
-    agent none
+    agent { label 'windows' }
+    environment {
+        GIT_VERSION = """${bat(
+            returnStdout: true,
+            script: '@git describe --tags'
+        ).trim()}"""
+        TAG_NAME = """${bat(
+            returnStdout: true,
+            script: '@git --no-pager tag --points-at HEAD'
+        ).trim()}"""
+    }
     stages {
         stage('Build') {
-            agent { label 'windows' }
+            options { skipDefaultCheckout() }
             steps {
                 bat "if exist artifacts rmdir artifacts /s /q"
                 bat "mkdir artifacts"
@@ -11,14 +21,7 @@ pipeline {
             }
         }
         stage('Unit tests') {
-            agent { label 'windows' }
             options { skipDefaultCheckout() }
-            environment {
-                GIT_VERSION = """${bat(
-                    returnStdout: true,
-                    script: '@git describe --tags'
-                ).trim()}"""
-            }
             steps {
                 bat "dotnet test --logger:\"junit;LogFilePath=unit-tests.xml\""
                 bat "move /y Ixnas.AltchaNet.Tests\\unit-tests.xml artifacts\\reports\\Ixnas.AltchaNet-${GIT_VERSION}-unit-tests.xml"
@@ -30,14 +33,7 @@ pipeline {
             }
         }
         stage('Mutation tests') {
-            agent { label 'windows' }
             options { skipDefaultCheckout() }
-            environment {
-                GIT_VERSION = """${bat(
-                    returnStdout: true,
-                    script: '@git describe --tags'
-                ).trim()}"""
-            }
             steps {
                 bat "dotnet stryker -O artifacts"
                 dir('artifacts/reports') {
@@ -48,31 +44,16 @@ pipeline {
             }
         }
         stage('Package') {
-            agent { label 'windows' }
             options { skipDefaultCheckout() }
-            environment {
-                GIT_VERSION = """${bat(
-                    returnStdout: true,
-                    script: '@git describe --tags'
-                ).trim()}"""
-            }
             steps {
                 bat "dotnet pack Ixnas.AltchaNet -o artifacts\\ -p:PackageVersion=${GIT_VERSION}"
                 archiveArtifacts artifacts: "artifacts/Ixnas.AltchaNet.${GIT_VERSION}.nupkg"
             }
         }
         stage('Publish') {
-            agent { label 'windows' }
             options { skipDefaultCheckout() }
             when {
                 buildingTag()
-                beforeAgent true
-            }
-            environment {
-                GIT_VERSION = """${bat(
-                    returnStdout: true,
-                    script: '@git describe --tags'
-                ).trim()}"""
             }
             steps {
                 bat "dotnet nuget push artifacts\\Ixnas.AltchaNet.${GIT_VERSION}.nupkg --api-key ${NUGET_API_KEY} --source https://api.nuget.org/v3/index.json"
