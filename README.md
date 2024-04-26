@@ -11,11 +11,6 @@ Server-side implementation of the [ALTCHA](http://altcha.org) challenge in C#.
 - Replay attack prevention by denying previously verified challenges
 - Expiring challenges
 
-## Disclaimer
-
-I am not part of the ALTCHA project and this is no official implementation. This is merely a compatible C#
-implementation of an ALTCHA server. All credits for their CAPTCHA solution go to them!
-
 ## Set up
 
 The entrypoint of this library contains a service builder.
