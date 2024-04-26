@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 
 namespace Ixnas.AltchaNet
@@ -11,7 +12,7 @@ namespace Ixnas.AltchaNet
         ///     Stores a challenge after it's been verified.
         /// </summary>
         /// <param name="challenge">String representation of the verified challenge.</param>
-        Task Store(string challenge);
+        Task Store(string challenge, DateTimeOffset expiryUtc);
 
         /// <summary>
         ///     Checks if a challenge has been stored before.

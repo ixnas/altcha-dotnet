@@ -2,8 +2,11 @@ namespace Ixnas.AltchaNet.Tests;
 
 internal class AltchaChallengeStoreFake : IAltchaChallengeStore
 {
-    public Task Store(string challenge)
+    public (string Challenge, DateTimeOffset Expiry)? Stored { get; private set; }
+
+    public Task Store(string challenge, DateTimeOffset expiryUtc)
     {
+        Stored = new ValueTuple<string, DateTimeOffset>(challenge, expiryUtc);
         return Task.CompletedTask;
     }
 

@@ -61,6 +61,24 @@ public class CreateChallengeTests
     }
 
     [Fact]
+    public async Task GivenChallengedHasExpiry_WhenCallingValidate_StoresMatchingExpiry()
+    {
+        var store = new AltchaChallengeStoreFake();
+        var service = GetServiceWithExpiry(30, store);
+        var challenge = service.Generate();
+        var tenSecondsFromNow = DateTimeOffset.UtcNow.AddSeconds(30);
+        var marginStart = tenSecondsFromNow.AddSeconds(-2);
+        var marginEnd = tenSecondsFromNow.AddSeconds(2);
+
+        var simulation = new AltchaFrontEndSimulation();
+        var result = simulation.Run(challenge);
+        await service.Validate(result.AltchaJson);
+
+        var expiry = store.Stored!.Value.Expiry;
+        Assert.InRange(expiry, marginStart, marginEnd);
+    }
+
+    [Fact]
     public async Task GivenChallengeIsSolved_WhenCallingValidateTwice_ReturnsNegativeResult()
     {
         var service = GetServiceWithComplexity(10, 20);
@@ -148,7 +166,7 @@ public class CreateChallengeTests
         await TestMalformedSimulation(null, challenge => challenge.Substring(1));
     }
 
-    private static async Task TestMalformedSimulation(Func<string, string>? malformSignatureFn,
+    private async static Task TestMalformedSimulation(Func<string, string>? malformSignatureFn,
                                                       Func<string, string>? malformChallengeFn)
     {
         var service = GetServiceWithComplexity(10, 20);
@@ -182,14 +200,19 @@ public class CreateChallengeTests
                      .Build();
     }
 
-    private static AltchaService GetServiceWithExpiry(int expiryInSeconds)
+    private static AltchaService GetServiceWithExpiry(int expiryInSeconds,
+                                                      IAltchaChallengeStore? store = null)
     {
         var key = TestUtils.GetKey();
-        return Altcha.CreateServiceBuilder()
-                     .UseSha256(key)
-                     .SetComplexity(10, 20)
-                     .SetExpiryInSeconds(expiryInSeconds)
-                     .UseInMemoryStore()
-                     .Build();
+        var builder = Altcha.CreateServiceBuilder()
+                            .UseSha256(key)
+                            .SetComplexity(10, 20)
+                            .SetExpiryInSeconds(expiryInSeconds);
+        if (store != null)
+            builder = builder.UseStore(store);
+        else
+            builder = builder.UseInMemoryStore();
+
+        return builder.Build();
     }
 }

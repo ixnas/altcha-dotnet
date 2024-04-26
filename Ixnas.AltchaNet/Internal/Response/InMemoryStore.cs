@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -7,7 +8,7 @@ namespace Ixnas.AltchaNet.Internal.Response
     {
         private readonly List<string> _stored = new List<string>();
 
-        public Task Store(string challenge)
+        public Task Store(string challenge, DateTimeOffset expiryUtc)
         {
             _stored.Add(challenge);
             return Task.CompletedTask;

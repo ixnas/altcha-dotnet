@@ -50,7 +50,6 @@ namespace Ixnas.AltchaNet
             var randomNumberGenerator = new BasicRandomNumberGenerator();
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
             var bytesStringConverter = new BytesStringConverter();
-            var saltValidator = new SaltTimestampValidator(serializer, _expiryInSeconds);
 
             var challengeGenerator = new ChallengeGenerator(saltGenerator,
                                                             randomNumberGenerator,
@@ -60,9 +59,9 @@ namespace Ixnas.AltchaNet
                                                             _max);
             var responseValidator = new ResponseValidator(_store,
                                                           serializer,
-                                                          saltValidator,
                                                           bytesStringConverter,
-                                                          cryptoAlgorithm);
+                                                          cryptoAlgorithm,
+                                                          _expiryInSeconds);
 
             return new AltchaService(challengeGenerator, responseValidator);
         }
