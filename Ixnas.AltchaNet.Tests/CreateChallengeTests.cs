@@ -59,6 +59,20 @@ public class CreateChallengeTests
         Assert.True(result.Succeeded);
         Assert.False(validationResult.IsValid);
     }
+    
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task GivenChallengeIsSolvedWithOldService_WhenCallingValidateOnNewService_RespectsOldExpiry()
+    {
+        var service = GetServiceWithExpiry(1);
+        var challenge = service.Generate();
+        Thread.Sleep(1100);
+        var simulation = new AltchaFrontEndSimulation();
+        var result = simulation.Run(challenge);
+        var newService = GetServiceWithExpiry(30);
+        var validationResult = await newService.Validate(result.AltchaJson);
+        Assert.False(validationResult.IsValid);
+    }
 
     [Fact]
     public async Task GivenChallengedHasExpiry_WhenCallingValidate_StoresMatchingExpiry()

@@ -11,9 +11,9 @@ namespace Ixnas.AltchaNet.Internal.Challenge
         private readonly int _max;
         private readonly int _min;
         private readonly IRandomNumberGenerator _randomNumberGenerator;
-        private readonly ISaltGenerator _saltGenerator;
+        private readonly ITimestampedSaltGenerator _saltGenerator;
 
-        public ChallengeGenerator(ISaltGenerator saltGenerator,
+        public ChallengeGenerator(ITimestampedSaltGenerator saltGenerator,
                                   IRandomNumberGenerator randomNumberGenerator,
                                   IBytesStringConverter bytesStringConverter,
                                   ICryptoAlgorithm cryptoAlgorithm,
@@ -31,7 +31,8 @@ namespace Ixnas.AltchaNet.Internal.Challenge
         public AltchaChallenge Generate()
         {
             var algorithm = _cryptoAlgorithm.Name;
-            var salt = _saltGenerator.Generate();
+            var salt = _saltGenerator.Generate()
+                                     .ToBase64Json();
             var secretNumber = _randomNumberGenerator.Generate(_min, _max);
             var challenge = string.Concat(salt, secretNumber.ToString());
             var challengeBytes = _bytesStringConverter.GetByteArrayFromUtf8String(challenge);

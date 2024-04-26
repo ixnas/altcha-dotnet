@@ -1,37 +1,21 @@
-using System;
 using Ixnas.AltchaNet.Internal.Serialization;
 
 namespace Ixnas.AltchaNet.Internal.Salt
 {
-    internal class TimestampedSaltGenerator : ISaltGenerator
+    internal class TimestampedSaltGenerator : ITimestampedSaltGenerator
     {
-        [Serializable]
-        internal class Salt
-        {
-            public long T { get; set; } // Timestamp
-            public int R { get; set; } // Random number
-        }
-
+        private readonly int _expiryInSeconds;
         private readonly IJsonSerializer _serializer;
 
-        public TimestampedSaltGenerator(IJsonSerializer serializer)
+        public TimestampedSaltGenerator(IJsonSerializer serializer, int expiryInSeconds)
         {
             _serializer = serializer;
+            _expiryInSeconds = expiryInSeconds;
         }
 
-        public string Generate()
+        public ITimestampedSalt Generate()
         {
-            return GetTimestampAndGuid();
-        }
-
-        private string GetTimestampAndGuid()
-        {
-            var timestampedSalt = new Salt
-            {
-                T = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                R = new Random().Next(1000, 9999)
-            };
-            return _serializer.ToBase64Json(timestampedSalt);
+            return new TimestampedSalt(_serializer, _expiryInSeconds);
         }
     }
 }

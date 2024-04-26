@@ -12,41 +12,34 @@ namespace Ixnas.AltchaNet.Internal.Response
     {
         private readonly IBytesStringConverter _bytesStringConverter;
         private readonly ICryptoAlgorithm _cryptoAlgorithm;
-        private readonly int _expiryInSeconds;
+        private readonly ITimestampedSaltParser _saltParser;
         private readonly IJsonSerializer _serializer;
         private readonly IAltchaChallengeStore _store;
 
         public ResponseValidator(IAltchaChallengeStore store,
                                  IJsonSerializer serializer,
+                                 ITimestampedSaltParser saltParser,
                                  IBytesStringConverter bytesStringConverter,
-                                 ICryptoAlgorithm cryptoAlgorithm,
-                                 int expiryInSeconds)
+                                 ICryptoAlgorithm cryptoAlgorithm)
         {
             _store = store;
             _serializer = serializer;
             _bytesStringConverter = bytesStringConverter;
             _cryptoAlgorithm = cryptoAlgorithm;
-            _expiryInSeconds = expiryInSeconds;
+            _saltParser = saltParser;
         }
 
         public async Task<AltchaValidationResult> Validate(string altchaBase64)
         {
             var altcha = _serializer.FromBase64Json<Response>(altchaBase64);
-            var timestamp = GetTimestampFromSalt(altcha.Salt);
+            var timestamp = _saltParser.FromBase64Json(altcha.Salt)
+                                       .GetExpiryUtc();
 
             if (!await IsValid(altcha, timestamp))
                 return new AltchaValidationResult();
 
             await _store.Store(altcha.Challenge, timestamp);
             return new AltchaValidationResult { IsValid = true };
-        }
-
-        private DateTimeOffset GetTimestampFromSalt(string salt)
-        {
-            var deserialized =
-                _serializer.FromBase64Json<TimestampedSaltGenerator.Salt>(salt);
-            return DateTimeOffset.FromUnixTimeMilliseconds(deserialized.T)
-                                 .AddSeconds(_expiryInSeconds);
         }
 
         private async Task<bool> IsValid(Response altcha, DateTimeOffset timestamp)

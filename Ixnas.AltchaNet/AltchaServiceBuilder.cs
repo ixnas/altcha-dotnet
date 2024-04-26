@@ -46,10 +46,11 @@ namespace Ixnas.AltchaNet
                 throw new MissingAlgorithmException();
 
             var serializer = new SystemTextJsonSerializer();
-            var saltGenerator = new TimestampedSaltGenerator(serializer);
             var randomNumberGenerator = new BasicRandomNumberGenerator();
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
             var bytesStringConverter = new BytesStringConverter();
+            var saltGenerator = new TimestampedSaltGenerator(serializer, _expiryInSeconds);
+            var saltParser = new TimestampedSaltParser(serializer);
 
             var challengeGenerator = new ChallengeGenerator(saltGenerator,
                                                             randomNumberGenerator,
@@ -59,9 +60,9 @@ namespace Ixnas.AltchaNet
                                                             _max);
             var responseValidator = new ResponseValidator(_store,
                                                           serializer,
+                                                          saltParser,
                                                           bytesStringConverter,
-                                                          cryptoAlgorithm,
-                                                          _expiryInSeconds);
+                                                          cryptoAlgorithm);
 
             return new AltchaService(challengeGenerator, responseValidator);
         }

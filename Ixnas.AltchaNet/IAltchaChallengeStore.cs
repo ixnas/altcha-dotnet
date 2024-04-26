@@ -12,7 +12,10 @@ namespace Ixnas.AltchaNet
         ///     Stores a challenge after it's been verified.
         /// </summary>
         /// <param name="challenge">String representation of the verified challenge.</param>
-        /// <param name="expiryUtc">Timestamp after which the challenge expires. Can be used to periodically remove all expired challenges from the store.</param>
+        /// <param name="expiryUtc">
+        ///     Timestamp after which the challenge expires. Can be used to periodically remove all expired
+        ///     challenges from the store.
+        /// </param>
         Task Store(string challenge, DateTimeOffset expiryUtc);
 
         /// <summary>
