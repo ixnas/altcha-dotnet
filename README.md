@@ -45,7 +45,6 @@ var key = new byte[64];
 using (var rng = RandomNumberGenerator.Create())
 {
     rng.GetBytes(key);
-    return key;
 }
 ```
 
@@ -61,7 +60,7 @@ internal class InMemoryStore : IAltchaChallengeStore
 {
     private readonly List<string> _stored = new List<string>();
 
-    public Task Store(string challenge)
+    public Task Store(string challenge, DateTimeOffset expiryUtc)
     {
         _stored.Add(challenge);
         return Task.CompletedTask;
@@ -74,6 +73,8 @@ internal class InMemoryStore : IAltchaChallengeStore
     }
 }
 ```
+
+You can use `expiryUtc` to periodically remove expired challenges from your store.
 
 ## Usage
 
