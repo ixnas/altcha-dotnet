@@ -11,6 +11,14 @@ Server-side implementation of the [ALTCHA](http://altcha.org) challenge in C#.
 - Replay attack prevention by denying previously verified challenges
 - Expiring challenges
 
+## Installation
+
+This library is available on NuGet, so you can add it to your project as follows:
+
+```
+dotnet add package Ixnas.AltchaNet
+```
+
 ## Set up
 
 The entrypoint of this library contains a service builder.
@@ -26,14 +34,14 @@ var altchaService = Altcha.CreateServiceBuilder()
 
 Here is a description of the different configuration options.
 
-| Method                                    | Description                                                                                                                                                                  |
-|-------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `UseStore(IAltchaChallengeStore store)`   | (Required) Configures a store to use for previously verified ALTCHA responses. Used to prevent replay attacks.                                                               |
-| `UseSha256(byte[] key)`                   | (Required) Configures the SHA-256 algorithm for hashing and signing. Currently the only supported algorithm.                                                                 |
-| `SetComplexity(int min, int max)`         | (Optional) Overrides the default complexity to tweak the amount of computational effort a client has to put in. See https://altcha.org/docs/complexity/ for more information |
-| `SetExpiryInSeconds(int expiryInSeconds)` | (Optional) Overrides the default time it takes for a challenge to expire.                                                                                                    |
-| `UseInMemoryStore()`                      | Configures a simple in-memory store for previously verified ALTCHA responses. Should only be used for testing purposes.                                                      |
-| `Build()`                                 | Returns a new configured service instance.                                                                                                                                   |
+| Method                                    | Description                                                                                                                                                                                           |
+|-------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `UseStore(IAltchaChallengeStore store)`   | (Required) Configures a store to use for previously verified ALTCHA responses. Used to prevent replay attacks.                                                                                        |
+| `UseSha256(byte[] key)`                   | (Required) Configures the SHA-256 algorithm for hashing and signing. Currently the only supported algorithm.                                                                                          |
+| `SetComplexity(int min, int max)`         | (Optional) Overrides the default complexity to tweak the amount of computational effort a client has to put in. See https://altcha.org/docs/complexity/ for more information (default 50000, 100000). |
+| `SetExpiryInSeconds(int expiryInSeconds)` | (Optional) Overrides the default time it takes for a challenge to expire (default 120).                                                                                                               |
+| `UseInMemoryStore()`                      | Configures a simple in-memory store for previously verified ALTCHA responses. Should only be used for testing purposes.                                                                               |
+| `Build()`                                 | Returns a new configured service instance.                                                                                                                                                            |
 
 ### Key
 
@@ -53,7 +61,7 @@ using (var rng = RandomNumberGenerator.Create())
 The library requires a store implementation to store previously verified challenge responses.
 You can use anything persistent, like a database or a file.
 As long as it implements the `IAltchaChallengeStore` interface, it will work.
-As an example, the bundled in-memory store (that you shouldn't use) looks like this:
+For example, the bundled in-memory store looks like this:
 
 ```csharp
 internal class InMemoryStore : IAltchaChallengeStore
@@ -107,6 +115,7 @@ You can run and examine the `AspNetCoreExample` project as a minimal example.
 
 ## License
 
-See [LICENSE.txt](./LICENSE.txt)
+See [LICENSE.txt](https://github.com/ixnas/altcha-dotnet/blob/main/LICENSE.txt)
 
-See [LICENSE-ALTCHA.txt](./LICENSE-ALTCHA.txt) for ALTCHA's original license.
+See [LICENSE-ALTCHA.txt](https://github.com/ixnas/altcha-dotnet/blob/main/LICENSE-ALTCHA.txt) for ALTCHA's original
+license.
