@@ -1,9 +1,10 @@
 using System;
+using Ixnas.AltchaNet.Internal.Cryptography;
 using Ixnas.AltchaNet.Internal.Serialization;
 
 namespace Ixnas.AltchaNet.Internal.Salt
 {
-    internal class TimestampedSalt : ITimestampedSalt
+    internal class TimestampedSalt
     {
         [Serializable]
         private class SerializedSalt
@@ -14,16 +15,20 @@ namespace Ixnas.AltchaNet.Internal.Salt
 
         private readonly DateTimeOffset _expiryUtc;
         private readonly int _randomNumber;
-        private readonly IJsonSerializer _serializer;
+        private readonly JsonSerializer _serializer;
 
-        public TimestampedSalt(IJsonSerializer serializer, int expiryInSeconds)
+        public TimestampedSalt(JsonSerializer serializer,
+                               RandomNumberGenerator randomNumberGenerator,
+                               Clock clock,
+                               int expiryInSeconds)
         {
             _serializer = serializer;
-            _expiryUtc = DateTimeOffset.UtcNow.AddSeconds(expiryInSeconds);
-            _randomNumber = new Random().Next(1000, 9999);
+            _expiryUtc = clock.GetUtcNow()
+                              .AddSeconds(expiryInSeconds);
+            _randomNumber = randomNumberGenerator.Generate(1000, 9999);
         }
 
-        public TimestampedSalt(IJsonSerializer serializer, string salt)
+        public TimestampedSalt(JsonSerializer serializer, string salt)
         {
             _serializer = serializer;
             var deserialized =

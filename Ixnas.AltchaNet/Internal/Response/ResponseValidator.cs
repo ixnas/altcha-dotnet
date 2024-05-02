@@ -8,24 +8,27 @@ using Ixnas.AltchaNet.Internal.Serialization;
 
 namespace Ixnas.AltchaNet.Internal.Response
 {
-    internal class ResponseValidator : IResponseValidator
+    internal class ResponseValidator
     {
-        private readonly IBytesStringConverter _bytesStringConverter;
-        private readonly ICryptoAlgorithm _cryptoAlgorithm;
-        private readonly ITimestampedSaltParser _saltParser;
-        private readonly IJsonSerializer _serializer;
+        private readonly BytesStringConverter _bytesStringConverter;
+        private readonly Clock _clock;
+        private readonly CryptoAlgorithm _cryptoAlgorithm;
+        private readonly TimestampedSaltParser _saltParser;
+        private readonly JsonSerializer _serializer;
         private readonly IAltchaChallengeStore _store;
 
         public ResponseValidator(IAltchaChallengeStore store,
-                                 IJsonSerializer serializer,
-                                 ITimestampedSaltParser saltParser,
-                                 IBytesStringConverter bytesStringConverter,
-                                 ICryptoAlgorithm cryptoAlgorithm)
+                                 JsonSerializer serializer,
+                                 TimestampedSaltParser saltParser,
+                                 BytesStringConverter bytesStringConverter,
+                                 CryptoAlgorithm cryptoAlgorithm,
+                                 Clock clock)
         {
             _store = store;
             _serializer = serializer;
             _bytesStringConverter = bytesStringConverter;
             _cryptoAlgorithm = cryptoAlgorithm;
+            _clock = clock;
             _saltParser = saltParser;
         }
 
@@ -87,10 +90,10 @@ namespace Ixnas.AltchaNet.Internal.Response
             return signatureBytes.SequenceEqual(calculatedSignature);
         }
 
-        private static bool TimestampIsValid(DateTimeOffset timestamp)
+        private bool TimestampIsValid(DateTimeOffset timestamp)
         {
             // stryker disable once equality: Impossible to black box test to exactly now.
-            return DateTimeOffset.UtcNow < timestamp;
+            return _clock.GetUtcNow() < timestamp;
         }
     }
 }

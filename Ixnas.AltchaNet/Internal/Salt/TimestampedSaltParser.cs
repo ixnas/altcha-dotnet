@@ -2,16 +2,16 @@ using Ixnas.AltchaNet.Internal.Serialization;
 
 namespace Ixnas.AltchaNet.Internal.Salt
 {
-    internal class TimestampedSaltParser : ITimestampedSaltParser
+    internal class TimestampedSaltParser
     {
-        private readonly IJsonSerializer _serializer;
+        private readonly JsonSerializer _serializer;
 
-        public TimestampedSaltParser(IJsonSerializer serializer)
+        public TimestampedSaltParser(JsonSerializer serializer)
         {
             _serializer = serializer;
         }
 
-        public ITimestampedSalt FromBase64Json(string salt)
+        public TimestampedSalt FromBase64Json(string salt)
         {
             return new TimestampedSalt(_serializer, salt);
         }

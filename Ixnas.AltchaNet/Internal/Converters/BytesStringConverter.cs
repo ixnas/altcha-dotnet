@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Ixnas.AltchaNet.Internal.Converters
 {
-    internal class BytesStringConverter : IBytesStringConverter
+    internal class BytesStringConverter
     {
         public string GetHexStringFromBytes(byte[] bytes)
         {

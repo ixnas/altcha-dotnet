@@ -2,6 +2,8 @@ namespace Ixnas.AltchaNet.Tests;
 
 public class CreateChallengeTests
 {
+    private readonly ClockFake _clock = new();
+
     [Fact]
     public void WhenCreateCalled_ThenChallengeNotNull()
     {
@@ -46,12 +48,11 @@ public class CreateChallengeTests
     }
 
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task GivenChallengedIsSolvedAfterExpiry_WhenCallingValidate_ReturnsNegativeResult()
     {
-        var service = GetServiceWithExpiry(1);
+        var service = GetServiceWithExpiry(1, null, _clock);
         var challenge = service.Generate();
-        Thread.Sleep(1100);
+        _clock.SetOffsetInSeconds(2);
         var simulation = new AltchaFrontEndSimulation();
         var result = simulation.Run(challenge);
         var validationResult = await service.Validate(result.AltchaJson);
@@ -59,17 +60,16 @@ public class CreateChallengeTests
         Assert.True(result.Succeeded);
         Assert.False(validationResult.IsValid);
     }
-    
+
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task GivenChallengeIsSolvedWithOldService_WhenCallingValidateOnNewService_RespectsOldExpiry()
     {
-        var service = GetServiceWithExpiry(1);
+        var service = GetServiceWithExpiry(1, null, _clock);
         var challenge = service.Generate();
-        Thread.Sleep(1100);
+        _clock.SetOffsetInSeconds(2);
         var simulation = new AltchaFrontEndSimulation();
         var result = simulation.Run(challenge);
-        var newService = GetServiceWithExpiry(30);
+        var newService = GetServiceWithExpiry(30, null, _clock);
         var validationResult = await newService.Validate(result.AltchaJson);
         Assert.False(validationResult.IsValid);
     }
@@ -180,8 +180,8 @@ public class CreateChallengeTests
         await TestMalformedSimulation(null, challenge => challenge.Substring(1));
     }
 
-    private async static Task TestMalformedSimulation(Func<string, string>? malformSignatureFn,
-                                                      Func<string, string>? malformChallengeFn)
+    private async Task TestMalformedSimulation(Func<string, string>? malformSignatureFn,
+                                               Func<string, string>? malformChallengeFn)
     {
         var service = GetServiceWithComplexity(10, 20);
         var challenge = service.Generate();
@@ -195,7 +195,7 @@ public class CreateChallengeTests
         Assert.False(validationResult.IsValid);
     }
 
-    private static AltchaService GetDefaultService()
+    private AltchaService GetDefaultService()
     {
         var key = TestUtils.GetKey();
         return Altcha.CreateServiceBuilder()
@@ -204,7 +204,7 @@ public class CreateChallengeTests
                      .Build();
     }
 
-    private static AltchaService GetServiceWithComplexity(int min, int max)
+    private AltchaService GetServiceWithComplexity(int min, int max)
     {
         var key = TestUtils.GetKey();
         return Altcha.CreateServiceBuilder()
@@ -214,8 +214,9 @@ public class CreateChallengeTests
                      .Build();
     }
 
-    private static AltchaService GetServiceWithExpiry(int expiryInSeconds,
-                                                      IAltchaChallengeStore? store = null)
+    private AltchaService GetServiceWithExpiry(int expiryInSeconds,
+                                               IAltchaChallengeStore? store = null,
+                                               Clock? clock = null)
     {
         var key = TestUtils.GetKey();
         var builder = Altcha.CreateServiceBuilder()
@@ -226,6 +227,9 @@ public class CreateChallengeTests
             builder = builder.UseStore(store);
         else
             builder = builder.UseInMemoryStore();
+
+        if (clock != null)
+            builder = builder.UseClock(clock);
 
         return builder.Build();
     }

@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace Ixnas.AltchaNet.Internal.Serialization
 {
-    internal class SystemTextJsonSerializer : IJsonSerializer
+    internal class SystemTextJsonSerializer : JsonSerializer
     {
         public T FromBase64Json<T>(string base64)
         {
@@ -14,12 +14,12 @@ namespace Ixnas.AltchaNet.Internal.Serialization
             {
                 PropertyNameCaseInsensitive = true
             };
-            return JsonSerializer.Deserialize<T>(altchaJson, serializerOptions);
+            return System.Text.Json.JsonSerializer.Deserialize<T>(altchaJson, serializerOptions);
         }
 
         public string ToBase64Json<T>(T obj)
         {
-            var serialized = JsonSerializer.SerializeToUtf8Bytes(obj);
+            var serialized = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(obj);
             return Convert.ToBase64String(serialized);
         }
     }

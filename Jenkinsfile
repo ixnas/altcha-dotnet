@@ -1,9 +1,14 @@
+def nugetBadge = addEmbeddableBadgeConfiguration(id: "nugetBadge", subject: "nuget", color: "blue")
 pipeline {
     agent { label 'windows' }
     environment {
         GIT_VERSION = """${bat(
             returnStdout: true,
             script: '@git describe --tags'
+        ).trim()}"""
+        GIT_LAST_TAG = """${bat(
+            returnStdout: true,
+            script: '@git describe --tags --abbrev=0'
         ).trim()}"""
         TAG_NAME = """${bat(
             returnStdout: true,
@@ -14,6 +19,9 @@ pipeline {
         stage('Build') {
             options { skipDefaultCheckout() }
             steps {
+                script {
+                    nugetBadge.setStatus("${GIT_LAST_TAG}")
+                }
                 bat "if exist artifacts rmdir artifacts /s /q"
                 bat "mkdir artifacts"
                 bat "mkdir artifacts\\reports"
@@ -35,7 +43,7 @@ pipeline {
         stage('Mutation tests') {
             options { skipDefaultCheckout() }
             steps {
-                bat "dotnet stryker -O artifacts"
+                bat "dotnet stryker -c 4 -O artifacts"
                 dir('artifacts/reports') {
                     bat "move /y mutation-tests.html Ixnas.AltchaNet-${GIT_VERSION}-mutation-tests.html"
                     bat "tar -a -c -f Ixnas.AltchaNet-${GIT_VERSION}-mutation-tests.zip Ixnas.AltchaNet-${GIT_VERSION}-mutation-tests.html"

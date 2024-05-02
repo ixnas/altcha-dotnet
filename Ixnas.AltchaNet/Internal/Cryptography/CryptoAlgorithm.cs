@@ -1,6 +1,6 @@
 ﻿namespace Ixnas.AltchaNet.Internal.Cryptography
 {
-    internal interface ICryptoAlgorithm
+    internal interface CryptoAlgorithm
     {
         string Name { get; }
         byte[] GetHash(byte[] bytes);

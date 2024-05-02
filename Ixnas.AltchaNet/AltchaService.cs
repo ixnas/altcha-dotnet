@@ -4,13 +4,13 @@ using Ixnas.AltchaNet.Internal.Response;
 
 namespace Ixnas.AltchaNet
 {
-    public sealed class AltchaService : IChallengeGenerator, IResponseValidator
+    public sealed class AltchaService
     {
-        private readonly IChallengeGenerator _challengeGenerator;
-        private readonly IResponseValidator _responseValidator;
+        private readonly ChallengeGenerator _challengeGenerator;
+        private readonly ResponseValidator _responseValidator;
 
-        internal AltchaService(IChallengeGenerator challengeGenerator,
-                               IResponseValidator responseValidator)
+        internal AltchaService(ChallengeGenerator challengeGenerator,
+                               ResponseValidator responseValidator)
         {
             _challengeGenerator = challengeGenerator;
             _responseValidator = responseValidator;

@@ -118,4 +118,18 @@ public class ServiceBuilderTests
         var builder = _builder.SetExpiryInSeconds(expiryInSeconds);
         Assert.NotNull(builder);
     }
+
+    [Fact]
+    public void GivenClockIsNull_WhenUseClockCalled_ThenThrowArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => _builder.UseClock(null));
+    }
+
+    [Fact]
+    public void GivenClockIsValid_WhenUseClockCalled_ThenReturnBuilder()
+    {
+        var clock = new ClockFake();
+        var builder = _builder.UseClock(clock);
+        Assert.NotNull(builder);
+    }
 }

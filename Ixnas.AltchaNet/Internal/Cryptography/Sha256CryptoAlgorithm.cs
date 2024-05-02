@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 
 namespace Ixnas.AltchaNet.Internal.Cryptography
 {
-    internal class Sha256CryptoAlgorithm : ICryptoAlgorithm
+    internal class Sha256CryptoAlgorithm : CryptoAlgorithm
     {
         private readonly byte[] _key;
 

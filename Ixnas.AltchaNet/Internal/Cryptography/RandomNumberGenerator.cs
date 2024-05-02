@@ -2,7 +2,7 @@ using System;
 
 namespace Ixnas.AltchaNet.Internal.Cryptography
 {
-    internal class BasicRandomNumberGenerator : IRandomNumberGenerator
+    internal class RandomNumberGenerator
     {
         public int Generate(int min, int max)
         {

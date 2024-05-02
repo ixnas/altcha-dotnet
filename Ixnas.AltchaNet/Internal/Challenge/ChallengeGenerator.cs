@@ -4,19 +4,19 @@ using Ixnas.AltchaNet.Internal.Salt;
 
 namespace Ixnas.AltchaNet.Internal.Challenge
 {
-    internal class ChallengeGenerator : IChallengeGenerator
+    internal class ChallengeGenerator
     {
-        private readonly IBytesStringConverter _bytesStringConverter;
-        private readonly ICryptoAlgorithm _cryptoAlgorithm;
+        private readonly BytesStringConverter _bytesStringConverter;
+        private readonly CryptoAlgorithm _cryptoAlgorithm;
         private readonly int _max;
         private readonly int _min;
-        private readonly IRandomNumberGenerator _randomNumberGenerator;
-        private readonly ITimestampedSaltGenerator _saltGenerator;
+        private readonly RandomNumberGenerator _randomNumberGenerator;
+        private readonly TimestampedSaltGenerator _saltGenerator;
 
-        public ChallengeGenerator(ITimestampedSaltGenerator saltGenerator,
-                                  IRandomNumberGenerator randomNumberGenerator,
-                                  IBytesStringConverter bytesStringConverter,
-                                  ICryptoAlgorithm cryptoAlgorithm,
+        public ChallengeGenerator(TimestampedSaltGenerator saltGenerator,
+                                  RandomNumberGenerator randomNumberGenerator,
+                                  BytesStringConverter bytesStringConverter,
+                                  CryptoAlgorithm cryptoAlgorithm,
                                   int min,
                                   int max)
         {

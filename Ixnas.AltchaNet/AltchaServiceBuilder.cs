@@ -12,6 +12,7 @@ namespace Ixnas.AltchaNet
 {
     public sealed class AltchaServiceBuilder
     {
+        private readonly Clock _clock = new DefaultClock();
         private readonly int _expiryInSeconds = Defaults.ExpiryInSeconds;
         private readonly byte[] _key;
         private readonly int _max = Defaults.ComplexityMax;
@@ -23,12 +24,14 @@ namespace Ixnas.AltchaNet
         }
 
         private AltchaServiceBuilder(IAltchaChallengeStore store,
+                                     Clock clock,
                                      byte[] key,
                                      int min,
                                      int max,
                                      int expiryInSeconds)
         {
             _store = store;
+            _clock = clock;
             _key = key;
             _min = min;
             _max = max;
@@ -46,10 +49,13 @@ namespace Ixnas.AltchaNet
                 throw new MissingAlgorithmException();
 
             var serializer = new SystemTextJsonSerializer();
-            var randomNumberGenerator = new BasicRandomNumberGenerator();
+            var randomNumberGenerator = new RandomNumberGenerator();
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
             var bytesStringConverter = new BytesStringConverter();
-            var saltGenerator = new TimestampedSaltGenerator(serializer, _expiryInSeconds);
+            var saltGenerator = new TimestampedSaltGenerator(serializer,
+                                                             randomNumberGenerator,
+                                                             _clock,
+                                                             _expiryInSeconds);
             var saltParser = new TimestampedSaltParser(serializer);
 
             var challengeGenerator = new ChallengeGenerator(saltGenerator,
@@ -62,7 +68,8 @@ namespace Ixnas.AltchaNet
                                                           serializer,
                                                           saltParser,
                                                           bytesStringConverter,
-                                                          cryptoAlgorithm);
+                                                          cryptoAlgorithm,
+                                                          _clock);
 
             return new AltchaService(challengeGenerator, responseValidator);
         }
@@ -77,6 +84,7 @@ namespace Ixnas.AltchaNet
             if (store == null)
                 throw new ArgumentNullException();
             return new AltchaServiceBuilder(store,
+                                            _clock,
                                             _key,
                                             _min,
                                             _max,
@@ -95,6 +103,7 @@ namespace Ixnas.AltchaNet
             if (key.Length != Defaults.RequiredKeySize)
                 throw new InvalidKeyException();
             return new AltchaServiceBuilder(_store,
+                                            _clock,
                                             key,
                                             _min,
                                             _max,
@@ -110,6 +119,7 @@ namespace Ixnas.AltchaNet
         {
             var store = new InMemoryStore();
             return new AltchaServiceBuilder(store,
+                                            _clock,
                                             _key,
                                             _min,
                                             _max,
@@ -128,6 +138,7 @@ namespace Ixnas.AltchaNet
             if (min < 0 || max < 0 || min > max)
                 throw new InvalidComplexityException();
             return new AltchaServiceBuilder(_store,
+                                            _clock,
                                             _key,
                                             min,
                                             max,
@@ -144,10 +155,30 @@ namespace Ixnas.AltchaNet
             if (expiryInSeconds < 1)
                 throw new InvalidExpiryException();
             return new AltchaServiceBuilder(_store,
+                                            _clock,
                                             _key,
                                             _min,
                                             _max,
                                             expiryInSeconds);
         }
+
+#if DEBUG
+        /// <summary>
+        ///     DEBUG ONLY: Provide an alternative clock implementation. Used for testing time based logic.
+        /// </summary>
+        /// <param name="clock">An alternative clock implementation.</param>
+        /// <returns>A new instance of the builder with the updated configuration.</returns>
+        public AltchaServiceBuilder UseClock(Clock clock)
+        {
+            if (clock == null)
+                throw new ArgumentNullException();
+            return new AltchaServiceBuilder(_store,
+                                            clock,
+                                            _key,
+                                            _min,
+                                            _max,
+                                            _expiryInSeconds);
+        }
+#endif
     }
 }
