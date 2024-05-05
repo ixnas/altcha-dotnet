@@ -1,3 +1,5 @@
+using Ixnas.AltchaNet.Debug;
+
 namespace Ixnas.AltchaNet.Tests;
 
 public class CreateChallengeTests
@@ -37,7 +39,7 @@ public class CreateChallengeTests
     [Fact]
     public async Task GivenChallengeIsSolved_WhenCallingValidate_ReturnsPositiveResult()
     {
-        var service = GetServiceWithComplexity(10, 20);
+        var service = GetServiceWithComplexity(1, 3);
         var challenge = service.Generate();
         var simulation = new AltchaFrontEndSimulation();
         var result = simulation.Run(challenge);
@@ -95,7 +97,7 @@ public class CreateChallengeTests
     [Fact]
     public async Task GivenChallengeIsSolved_WhenCallingValidateTwice_ReturnsNegativeResult()
     {
-        var service = GetServiceWithComplexity(10, 20);
+        var service = GetServiceWithComplexity(1, 3);
         var challenge = service.Generate();
         var simulation = new AltchaFrontEndSimulation();
         var result = simulation.Run(challenge);
@@ -156,28 +158,40 @@ public class CreateChallengeTests
         Assert.Fail();
     }
 
-    [Fact]
-    public async Task GivenMalformedSignature_WhenCallingValidate_ReturnsNegativeResult()
+    [Theory]
+    [InlineData("")]
+    [InlineData("x")]
+    public async Task GivenMalformedSignature_WhenCallingValidate_ReturnsNegativeResult(string prefix)
     {
-        await TestMalformedSimulation(signature => "x" + signature.Substring(1), null);
+        await TestMalformedSimulation(signature => prefix + signature.Substring(1), null);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("x")]
+    public async Task GivenMalformedChallenge_WhenCallingValidate_ReturnsNegativeResult(string prefix)
+    {
+        await TestMalformedSimulation(null, challenge => prefix + challenge.Substring(1));
     }
 
     [Fact]
-    public async Task GivenMalformedShortSignature_WhenCallingValidate_ReturnsNegativeResult()
+    public async Task
+        GivenStoredChallengesAreExpired_WhenChallengeIsValidated_CleansExpiredChallengesFromInMemoryStore()
     {
-        await TestMalformedSimulation(signature => signature.Substring(1), null);
-    }
+        var service = GetServiceWithExpiry(20, null, _clock);
+        var challenge = service.Generate();
+        var simulation = new AltchaFrontEndSimulation();
+        var result = simulation.Run(challenge);
+        var run1 = await service.Validate(result.AltchaJson);
+        Assert.True(run1.IsValid);
 
-    [Fact]
-    public async Task GivenMalformedChallenge_WhenCallingValidate_ReturnsNegativeResult()
-    {
-        await TestMalformedSimulation(null, challenge => "x" + challenge.Substring(1));
-    }
+        _clock.SetOffsetInSeconds(40);
+        var run2 = await service.Validate(result.AltchaJson); // cleaned
+        Assert.False(run2.IsValid);
 
-    [Fact]
-    public async Task GivenMalformedShortChallenge_WhenCallingValidate_ReturnsNegativeResult()
-    {
-        await TestMalformedSimulation(null, challenge => challenge.Substring(1));
+        _clock.SetOffsetInSeconds(0);
+        var run3 = await service.Validate(result.AltchaJson);
+        Assert.True(run3.IsValid);
     }
 
     private async Task TestMalformedSimulation(Func<string, string>? malformSignatureFn,
@@ -221,8 +235,9 @@ public class CreateChallengeTests
         var key = TestUtils.GetKey();
         var builder = Altcha.CreateServiceBuilder()
                             .UseSha256(key)
-                            .SetComplexity(10, 20)
+                            .SetComplexity(1, 3)
                             .SetExpiryInSeconds(expiryInSeconds);
+
         if (store != null)
             builder = builder.UseStore(store);
         else

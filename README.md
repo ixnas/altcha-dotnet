@@ -62,28 +62,39 @@ using (var rng = RandomNumberGenerator.Create())
 The library requires a store implementation to store previously verified challenge responses.
 You can use anything persistent, like a database or a file.
 As long as it implements the `IAltchaChallengeStore` interface, it will work.
-For example, the bundled in-memory store looks like this:
+You can use `expiryUtc` to periodically remove expired challenges from your store.
+For example, the bundled in-memory store looks similar to this:
 
 ```csharp
-internal class InMemoryStore : IAltchaChallengeStore
+public class InMemoryStore : IAltchaChallengeStore
 {
-    private readonly List<string> _stored = new List<string>();
+    private class StoredChallenge
+    {
+        public string Challenge { get; set; }
+        public DateTimeOffset ExpiryUtc { get; set; }
+    }
+
+    private readonly List<StoredChallenge> _stored = new List<StoredChallenge>();
 
     public Task Store(string challenge, DateTimeOffset expiryUtc)
     {
-        _stored.Add(challenge);
+        var challengeToStore = new StoredChallenge
+        {
+            Challenge = challenge,
+            ExpiryUtc = expiryUtc
+        };
+        _stored.Add(challengeToStore);
         return Task.CompletedTask;
     }
 
     public Task<bool> Exists(string challenge)
     {
-        var exists = _stored.Contains(challenge);
+        _stored.RemoveAll(storedChallenge => storedChallenge.ExpiryUtc <= DateTimeOffset.UtcNow);
+        var exists = _stored.Exists(storedChallenge => storedChallenge.Challenge == challenge);
         return Task.FromResult(exists);
     }
 }
 ```
-
-You can use `expiryUtc` to periodically remove expired challenges from your store.
 
 ## Usage
 

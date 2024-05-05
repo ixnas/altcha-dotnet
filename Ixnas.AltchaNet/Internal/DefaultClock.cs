@@ -1,4 +1,5 @@
 using System;
+using Ixnas.AltchaNet.Debug;
 
 namespace Ixnas.AltchaNet.Internal
 {

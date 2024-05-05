@@ -1,6 +1,6 @@
 using System;
 
-namespace Ixnas.AltchaNet
+namespace Ixnas.AltchaNet.Debug
 {
 #if DEBUG
     public interface Clock

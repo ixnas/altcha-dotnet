@@ -1,3 +1,5 @@
+using Ixnas.AltchaNet.Debug;
+
 namespace Ixnas.AltchaNet.Tests;
 
 internal class ClockFake : Clock

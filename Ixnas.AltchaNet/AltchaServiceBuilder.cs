@@ -1,4 +1,5 @@
 using System;
+using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal;
 using Ixnas.AltchaNet.Internal.Challenge;
@@ -18,6 +19,7 @@ namespace Ixnas.AltchaNet
         private readonly int _max = Defaults.ComplexityMax;
         private readonly int _min = Defaults.ComplexityMin;
         private readonly IAltchaChallengeStore _store;
+        private readonly bool _useInMemoryStore;
 
         internal AltchaServiceBuilder()
         {
@@ -28,7 +30,8 @@ namespace Ixnas.AltchaNet
                                      byte[] key,
                                      int min,
                                      int max,
-                                     int expiryInSeconds)
+                                     int expiryInSeconds,
+                                     bool useInMemoryStore)
         {
             _store = store;
             _clock = clock;
@@ -36,6 +39,7 @@ namespace Ixnas.AltchaNet
             _min = min;
             _max = max;
             _expiryInSeconds = expiryInSeconds;
+            _useInMemoryStore = useInMemoryStore;
         }
 
         /// <summary>
@@ -43,11 +47,12 @@ namespace Ixnas.AltchaNet
         /// </summary>
         public AltchaService Build()
         {
-            if (_store == null)
+            if (!_useInMemoryStore && _store == null)
                 throw new MissingStoreException();
             if (_key == null)
                 throw new MissingAlgorithmException();
 
+            var store = _store ?? new InMemoryStore(_clock);
             var serializer = new SystemTextJsonSerializer();
             var randomNumberGenerator = new RandomNumberGenerator();
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
@@ -64,7 +69,7 @@ namespace Ixnas.AltchaNet
                                                             cryptoAlgorithm,
                                                             _min,
                                                             _max);
-            var responseValidator = new ResponseValidator(_store,
+            var responseValidator = new ResponseValidator(store,
                                                           serializer,
                                                           saltParser,
                                                           bytesStringConverter,
@@ -88,7 +93,8 @@ namespace Ixnas.AltchaNet
                                             _key,
                                             _min,
                                             _max,
-                                            _expiryInSeconds);
+                                            _expiryInSeconds,
+                                            _useInMemoryStore);
         }
 
         /// <summary>
@@ -107,7 +113,8 @@ namespace Ixnas.AltchaNet
                                             key,
                                             _min,
                                             _max,
-                                            _expiryInSeconds);
+                                            _expiryInSeconds,
+                                            _useInMemoryStore);
         }
 
         /// <summary>
@@ -117,13 +124,13 @@ namespace Ixnas.AltchaNet
         /// <returns>A new instance of the builder with the updated configuration.</returns>
         public AltchaServiceBuilder UseInMemoryStore()
         {
-            var store = new InMemoryStore();
-            return new AltchaServiceBuilder(store,
+            return new AltchaServiceBuilder(null,
                                             _clock,
                                             _key,
                                             _min,
                                             _max,
-                                            _expiryInSeconds);
+                                            _expiryInSeconds,
+                                            true);
         }
 
         /// <summary>
@@ -142,7 +149,8 @@ namespace Ixnas.AltchaNet
                                             _key,
                                             min,
                                             max,
-                                            _expiryInSeconds);
+                                            _expiryInSeconds,
+                                            _useInMemoryStore);
         }
 
         /// <summary>
@@ -159,7 +167,8 @@ namespace Ixnas.AltchaNet
                                             _key,
                                             _min,
                                             _max,
-                                            expiryInSeconds);
+                                            expiryInSeconds,
+                                            _useInMemoryStore);
         }
 
 #if DEBUG
@@ -177,7 +186,8 @@ namespace Ixnas.AltchaNet
                                             _key,
                                             _min,
                                             _max,
-                                            _expiryInSeconds);
+                                            _expiryInSeconds,
+                                            _useInMemoryStore);
         }
 #endif
     }

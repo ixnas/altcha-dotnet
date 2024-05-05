@@ -1,3 +1,4 @@
+using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Internal.Cryptography;
 using Ixnas.AltchaNet.Internal.Serialization;
 
