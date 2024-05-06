@@ -65,7 +65,9 @@ pipeline {
                 buildingTag()
             }
             steps {
-                bat "dotnet nuget push artifacts\\Ixnas.AltchaNet.${GIT_VERSION}.nupkg --api-key ${NUGET_API_KEY} --source https://api.nuget.org/v3/index.json"
+                withCredentials([string(credentialsId: "NUGET_API_KEY", variable: "TOKEN")]) {
+                    bat 'dotnet nuget push artifacts\\Ixnas.AltchaNet.${GIT_VERSION}.nupkg --api-key %TOKEN% --source https://api.nuget.org/v3/index.json'
+                }
             }
         }
     }
