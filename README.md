@@ -30,7 +30,7 @@ The most basic configuration looks like this:
 var altchaService = Altcha.CreateServiceBuilder()
                           .UseSha256(key)
                           .UseStore(store)
-                          .Build());
+                          .Build();
 ```
 
 Here is a description of the different configuration options.
