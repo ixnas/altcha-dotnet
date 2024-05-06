@@ -55,7 +55,7 @@ pipeline {
         stage('Package') {
             options { skipDefaultCheckout() }
             steps {
-                bat "dotnet pack Ixnas.AltchaNet -o artifacts\\ -p:PackageVersion=${GIT_VERSION}"
+                bat "dotnet pack Ixnas.AltchaNet -o artifacts\\ -p:PackageVersion=${GIT_VERSION} -p:AssemblyVersion=${GIT_LAST_TAG} -p:InformationalVersion=${GIT_LAST_TAG} -p:ContinuousIntegrationBuild=true -p:EmbedUntrackedSources=true"
                 archiveArtifacts artifacts: "artifacts/Ixnas.AltchaNet.${GIT_VERSION}.nupkg"
             }
         }
@@ -66,7 +66,7 @@ pipeline {
             }
             steps {
                 withCredentials([string(credentialsId: "NUGET_API_KEY", variable: "TOKEN")]) {
-                    bat 'dotnet nuget push artifacts\\Ixnas.AltchaNet.${GIT_VERSION}.nupkg --api-key %TOKEN% --source https://api.nuget.org/v3/index.json'
+                    bat 'dotnet nuget push artifacts\\Ixnas.AltchaNet.%GIT_VERSION%.nupkg --api-key %TOKEN% --source https://api.nuget.org/v3/index.json'
                 }
             }
         }
