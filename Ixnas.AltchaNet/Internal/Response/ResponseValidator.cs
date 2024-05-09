@@ -12,6 +12,7 @@ namespace Ixnas.AltchaNet.Internal.Response
     internal class ResponseValidator
     {
         private readonly BytesStringConverter _bytesStringConverter;
+        private readonly ChallengeStringToBytesConverter _challengeStringToBytesConverter;
         private readonly Clock _clock;
         private readonly CryptoAlgorithm _cryptoAlgorithm;
         private readonly TimestampedSaltParser _saltParser;
@@ -23,21 +24,33 @@ namespace Ixnas.AltchaNet.Internal.Response
                                  TimestampedSaltParser saltParser,
                                  BytesStringConverter bytesStringConverter,
                                  CryptoAlgorithm cryptoAlgorithm,
-                                 Clock clock)
+                                 Clock clock,
+                                 ChallengeStringToBytesConverter challengeStringToBytesConverter)
         {
             _store = store;
             _serializer = serializer;
             _bytesStringConverter = bytesStringConverter;
             _cryptoAlgorithm = cryptoAlgorithm;
             _clock = clock;
+            _challengeStringToBytesConverter = challengeStringToBytesConverter;
             _saltParser = saltParser;
         }
 
         public async Task<AltchaValidationResult> Validate(string altchaBase64)
         {
-            var altcha = _serializer.FromBase64Json<Response>(altchaBase64);
-            var timestamp = _saltParser.FromBase64Json(altcha.Salt)
-                                       .GetExpiryUtc();
+            if (string.IsNullOrWhiteSpace(altchaBase64))
+                throw new ArgumentNullException();
+
+            var altchaParsedResult = _serializer.FromBase64Json<Response>(altchaBase64);
+            if (!altchaParsedResult.Success)
+                return new AltchaValidationResult();
+
+            var altcha = altchaParsedResult.Value;
+            var saltParsedResult = _saltParser.Parse(altcha.Salt);
+            if (!saltParsedResult.Success)
+                return new AltchaValidationResult();
+
+            var timestamp = saltParsedResult.Value.GetExpiryUtc();
 
             if (!await IsValid(altcha, timestamp))
                 return new AltchaValidationResult();
@@ -78,7 +91,7 @@ namespace Ixnas.AltchaNet.Internal.Response
         private bool SignatureIsValid(string signature, string challenge)
         {
             var signatureBytesResult = _bytesStringConverter.GetByteArrayFromHexString(signature);
-            var challengeBytesResult = _bytesStringConverter.GetByteArrayFromHexString(challenge);
+            var challengeBytesResult = _challengeStringToBytesConverter.Generate(challenge);
 
             var couldConvert = signatureBytesResult.Success && challengeBytesResult.Success;
             if (!couldConvert)

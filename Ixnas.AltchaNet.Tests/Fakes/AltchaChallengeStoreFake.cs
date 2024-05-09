@@ -1,4 +1,4 @@
-namespace Ixnas.AltchaNet.Tests;
+namespace Ixnas.AltchaNet.Tests.Fakes;
 
 internal class AltchaChallengeStoreFake : IAltchaChallengeStore
 {

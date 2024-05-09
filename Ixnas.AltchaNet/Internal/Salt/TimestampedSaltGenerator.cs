@@ -22,12 +22,12 @@ namespace Ixnas.AltchaNet.Internal.Salt
             _expiryInSeconds = expiryInSeconds;
         }
 
-        public TimestampedSalt Generate()
+        public DefaultTimestampedSalt Generate()
         {
-            return new TimestampedSalt(_serializer,
-                                       _randomNumberGenerator,
-                                       _clock,
-                                       _expiryInSeconds);
+            return new DefaultTimestampedSalt(_serializer,
+                                              _randomNumberGenerator,
+                                              _clock,
+                                              _expiryInSeconds);
         }
     }
 }

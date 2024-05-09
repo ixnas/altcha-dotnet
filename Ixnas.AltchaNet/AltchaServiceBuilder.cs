@@ -11,6 +11,9 @@ using Ixnas.AltchaNet.Internal.Serialization;
 
 namespace Ixnas.AltchaNet
 {
+    /// <summary>
+    ///     Builds the service that provides self-hosted ALTCHA challenges
+    /// </summary>
     public sealed class AltchaServiceBuilder
     {
         private readonly Clock _clock = new DefaultClock();
@@ -61,7 +64,9 @@ namespace Ixnas.AltchaNet
                                                              randomNumberGenerator,
                                                              _clock,
                                                              _expiryInSeconds);
-            var saltParser = new TimestampedSaltParser(serializer);
+            var saltParser = new DefaultTimestampedSaltParser(serializer);
+            var challengeStringToBytesConverter =
+                new DefaultChallengeStringToBytesConverter(bytesStringConverter);
 
             var challengeGenerator = new ChallengeGenerator(saltGenerator,
                                                             randomNumberGenerator,
@@ -74,7 +79,8 @@ namespace Ixnas.AltchaNet
                                                           saltParser,
                                                           bytesStringConverter,
                                                           cryptoAlgorithm,
-                                                          _clock);
+                                                          _clock,
+                                                          challengeStringToBytesConverter);
 
             return new AltchaService(challengeGenerator, responseValidator);
         }

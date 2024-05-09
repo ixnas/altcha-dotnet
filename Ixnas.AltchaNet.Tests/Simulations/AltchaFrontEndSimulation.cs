@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace Ixnas.AltchaNet.Tests;
+namespace Ixnas.AltchaNet.Tests.Simulations;
 
 internal class AltchaFrontEndSimulation
 {
@@ -24,7 +24,8 @@ internal class AltchaFrontEndSimulation
 
     public AltchaFrontEndSimulationResult Run(AltchaChallenge altchaChallenge,
                                               Func<string, string>? malformSignatureFn = null,
-                                              Func<string, string>? malformChallengeFn = null)
+                                              Func<string, string>? malformChallengeFn = null,
+                                              Func<string, string>? malformSaltFn = null)
     {
         using var sha = new SHA256Managed();
 
@@ -45,7 +46,8 @@ internal class AltchaFrontEndSimulation
                                                 altchaChallenge.Salt,
                                                 altchaChallenge.Signature,
                                                 malformSignatureFn,
-                                                malformChallengeFn);
+                                                malformChallengeFn,
+                                                malformSaltFn);
             return new AltchaFrontEndSimulationResult
             {
                 Succeeded = true,
@@ -80,13 +82,17 @@ internal class AltchaFrontEndSimulation
                                              string salt,
                                              string signature,
                                              Func<string, string>? malformSignatureFn,
-                                             Func<string, string>? malformChallengeFn)
+                                             Func<string, string>? malformChallengeFn,
+                                             Func<string, string>? malformSaltFn)
     {
         if (malformSignatureFn != null)
             signature = malformSignatureFn(signature);
 
         if (malformChallengeFn != null)
             challenge = malformChallengeFn(challenge);
+
+        if (malformSaltFn != null)
+            salt = malformSaltFn(salt);
 
         var req = new Req
         {

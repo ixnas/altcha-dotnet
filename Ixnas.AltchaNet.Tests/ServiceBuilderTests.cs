@@ -1,4 +1,5 @@
 using Ixnas.AltchaNet.Exceptions;
+using Ixnas.AltchaNet.Tests.Fakes;
 
 namespace Ixnas.AltchaNet.Tests;
 
@@ -131,5 +132,26 @@ public class ServiceBuilderTests
         var clock = new ClockFake();
         var builder = _builder.UseClock(clock);
         Assert.NotNull(builder);
+    }
+
+    [Fact]
+    public void WhenBuilderMethodsAreCalled_ThenReturnNewBuilderInstance()
+    {
+        var store = new AltchaChallengeStoreFake();
+        var builder2 = _builder.UseStore(store);
+        Assert.NotEqual(_builder, builder2);
+
+        var key = TestUtils.GetKey();
+        var builder3 = builder2.UseSha256(key);
+        Assert.NotEqual(builder2, builder3);
+
+        var builder4 = builder3.UseInMemoryStore();
+        Assert.NotEqual(builder3, builder4);
+
+        var builder5 = builder4.SetComplexity(1, 3);
+        Assert.NotEqual(builder4, builder5);
+
+        var builder6 = builder5.SetExpiryInSeconds(5);
+        Assert.NotEqual(builder5, builder6);
     }
 }
