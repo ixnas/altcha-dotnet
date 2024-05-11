@@ -9,32 +9,33 @@ internal class AltchaFrontEndSimulation
     internal class AltchaFrontEndSimulationResult
     {
         public bool Succeeded { get; init; }
-        public string AltchaJson { get; init; }
+        public string? AltchaJson { get; init; }
         public int Number { get; init; }
     }
 
+    [Serializable]
     private class Req
     {
-        public string Challenge { get; init; }
+        public string? Challenge { get; init; }
         public int Number { get; init; }
-        public string Salt { get; init; }
-        public string Signature { get; init; }
-        public string Algorithm { get; init; }
+        public string? Salt { get; init; }
+        public string? Signature { get; init; }
+        public string? Algorithm { get; init; }
     }
 
+#pragma warning disable CA1822
     public AltchaFrontEndSimulationResult Run(AltchaChallenge altchaChallenge,
+#pragma warning restore CA1822
                                               Func<string, string>? malformSignatureFn = null,
                                               Func<string, string>? malformChallengeFn = null,
                                               Func<string, string>? malformSaltFn = null)
     {
-        using var sha = new SHA256Managed();
-
         for (var number = 0; number <= altchaChallenge.Maxnumber; number++)
         {
             var challenge = altchaChallenge.Salt + $"{number}";
             var challengeBytes = Encoding.UTF8.GetBytes(challenge);
 
-            var attemptedHash = sha.ComputeHash(challengeBytes);
+            var attemptedHash = SHA256.HashData(challengeBytes);
             var validHash = StringToBytes(altchaChallenge.Challenge);
 
             var succeeded = attemptedHash.SequenceEqual(validHash);
@@ -63,6 +64,7 @@ internal class AltchaFrontEndSimulation
         };
     }
 
+    // ReSharper disable once ReturnTypeCanBeEnumerable.Local
     private static byte[] StringToBytes(string str)
     {
         var bytes = new List<byte>();
@@ -102,11 +104,7 @@ internal class AltchaFrontEndSimulation
             Signature = signature,
             Algorithm = "SHA-256"
         };
-        var json = JsonSerializer.SerializeToUtf8Bytes(req,
-                                                       new JsonSerializerOptions
-                                                       {
-                                                           PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                                                       });
+        var json = JsonSerializer.SerializeToUtf8Bytes(req, TestUtils.JsonSerializerOptions);
         return Convert.ToBase64String(json);
     }
 }

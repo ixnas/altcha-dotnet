@@ -128,7 +128,7 @@ public class CommonChallengeTests
     {
         var service = TestUtils.ServiceFactories[commonServiceType]
                                .GetDefaultService();
-        await TestMalformedSimulation(service, signature => prefix + signature.Substring(1), null);
+        await TestMalformedSimulation(service, signature => prefix + signature[1..], null);
     }
 
     [Theory]
@@ -142,7 +142,7 @@ public class CommonChallengeTests
     {
         var service = TestUtils.ServiceFactories[commonServiceType]
                                .GetDefaultService();
-        await TestMalformedSimulation(service, null, challenge => prefix + challenge.Substring(1));
+        await TestMalformedSimulation(service, null, challenge => prefix + challenge[1..]);
     }
 
     [Theory]
@@ -210,9 +210,9 @@ public class CommonChallengeTests
         Assert.True(run3.IsValid);
     }
 
-    private async Task TestMalformedSimulation(CommonService service,
-                                               Func<string, string>? malformSignatureFn,
-                                               Func<string, string>? malformChallengeFn)
+    private async static Task TestMalformedSimulation(CommonService service,
+                                                      Func<string, string>? malformSignatureFn,
+                                                      Func<string, string>? malformChallengeFn)
     {
         var challenge = service.Generate();
         var simulation = new AltchaFrontEndSimulation();

@@ -11,6 +11,16 @@ namespace Ixnas.AltchaNet.Internal.Response
 {
     internal class ResponseValidator
     {
+        [Serializable]
+        private class SerializedResponse
+        {
+            public string Algorithm { get; set; }
+            public string Challenge { get; set; }
+            public int Number { get; set; }
+            public string Salt { get; set; }
+            public string Signature { get; set; }
+        }
+
         private readonly BytesStringConverter _bytesStringConverter;
         private readonly ChallengeStringToBytesConverter _challengeStringToBytesConverter;
         private readonly Clock _clock;
@@ -41,32 +51,38 @@ namespace Ixnas.AltchaNet.Internal.Response
             if (string.IsNullOrWhiteSpace(altchaBase64))
                 throw new ArgumentNullException();
 
-            var altchaParsedResult = _serializer.FromBase64Json<Response>(altchaBase64);
-            if (!altchaParsedResult.Success)
-                return new AltchaValidationResult();
+            var isValid = TryParseAltchaBase64(altchaBase64, out var altcha, out var timestamp)
+                          && await IsNewChallenge(altcha.Challenge)
+                          && AlgorithmMatches(altcha.Algorithm)
+                          && ChallengeIsValid(altcha.Challenge, altcha.Salt, altcha.Number)
+                          && SignatureIsValid(altcha.Signature, altcha.Challenge)
+                          && TimestampIsValid(timestamp);
 
-            var altcha = altchaParsedResult.Value;
-            var saltParsedResult = _saltParser.Parse(altcha.Salt);
-            if (!saltParsedResult.Success)
-                return new AltchaValidationResult();
-
-            var timestamp = saltParsedResult.Value.GetExpiryUtc();
-
-            if (!await IsValid(altcha, timestamp))
+            if (!isValid)
                 return new AltchaValidationResult();
 
             await _store.Store(altcha.Challenge, timestamp);
             return new AltchaValidationResult { IsValid = true };
         }
 
-        private async Task<bool> IsValid(Response altcha, DateTimeOffset timestamp)
+        private bool TryParseAltchaBase64(string altchaBase64,
+                                          out SerializedResponse altcha,
+                                          out DateTimeOffset timestamp)
         {
-            return
-                await IsNewChallenge(altcha.Challenge)
-                && AlgorithmMatches(altcha.Algorithm)
-                && ChallengeIsValid(altcha.Challenge, altcha.Salt, altcha.Number)
-                && SignatureIsValid(altcha.Signature, altcha.Challenge)
-                && TimestampIsValid(timestamp);
+            var altchaParsedResult = _serializer.FromBase64Json<SerializedResponse>(altchaBase64);
+            if (!altchaParsedResult.Success)
+            {
+                altcha = null;
+                return false;
+            }
+
+            altcha = altchaParsedResult.Value;
+
+            var saltParsedResult = _saltParser.Parse(altcha.Salt);
+            if (saltParsedResult.Success)
+                timestamp = saltParsedResult.Value.GetExpiryUtc();
+
+            return true;
         }
 
         private async Task<bool> IsNewChallenge(string challenge)

@@ -57,8 +57,8 @@ public class SelfHostedChallengeTests
     [Fact]
     public void GivenCustomComplexity_WhenCallingValidateMultipleTimes_ReturnsResultWithNumberInclusiveRange()
     {
-        var min = 10;
-        var max = 12;
+        const int min = 10;
+        const int max = 12;
 
         var minHit = false;
         var maxHit = false;
@@ -70,13 +70,17 @@ public class SelfHostedChallengeTests
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
 
-            Assert.False(result.Number < min || result.Number > max);
+            Assert.False(result.Number is < min or > max);
 
-            if (result.Number == min)
-                minHit = true;
-
-            if (result.Number == max)
-                maxHit = true;
+            switch (result.Number)
+            {
+                case min:
+                    minHit = true;
+                    break;
+                case max:
+                    maxHit = true;
+                    break;
+            }
 
             if (minHit && maxHit)
                 return;
@@ -85,13 +89,13 @@ public class SelfHostedChallengeTests
         Assert.Fail();
     }
 
-    private CommonService GetDefaultService()
+    private static CommonService GetDefaultService()
     {
         return TestUtils.ServiceFactories[CommonServiceType.Default]
                         .GetDefaultService();
     }
 
-    private AltchaService GetServiceWithComplexity(int min, int max)
+    private static AltchaService GetServiceWithComplexity(int min, int max)
     {
         var key = TestUtils.GetKey();
         return Altcha.CreateServiceBuilder()

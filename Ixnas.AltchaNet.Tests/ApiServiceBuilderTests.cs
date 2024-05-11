@@ -41,6 +41,24 @@ public class ApiServiceBuilderTests
     }
 
     [Theory]
+    [InlineData(0)]
+    [InlineData(-0.1)]
+    public void GivenMaxSpamFilterScoreIsZeroOrNegative_WhenSetMaxSpamFilterScoreCalled_ThenThrowsException(
+        double scoreThreshold)
+    {
+        Assert.Throws<InvalidMaxSpamFilterScoreException>(() =>
+                                                              _builder
+                                                                  .SetMaxSpamFilterScore(scoreThreshold));
+    }
+
+    [Fact]
+    public void GivenMaxSpamFilterScoreIsPositive_WhenSetMaxSpamFilterScoreCalled_ThenReturnsBuilder()
+    {
+        var builder = _builder.SetMaxSpamFilterScore(0.5);
+        Assert.NotNull(builder);
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]

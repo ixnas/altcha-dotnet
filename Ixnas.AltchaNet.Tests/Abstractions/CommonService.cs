@@ -21,7 +21,7 @@ internal interface CommonServiceFactory
 internal interface CommonService
 {
     AltchaChallenge Generate();
-    Task<AltchaValidationResult> Validate(string altcha64);
+    Task<AltchaValidationResult> Validate(string? altcha64);
 }
 
 internal class CommonDefaultServiceFactory : CommonServiceFactory
@@ -47,6 +47,7 @@ internal class CommonDefaultServiceFactory : CommonServiceFactory
                             .SetComplexity(1, 3)
                             .SetExpiryInSeconds(expiryInSeconds);
 
+        // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
         if (store != null)
             builder = builder.UseStore(store);
         else
@@ -81,6 +82,7 @@ internal class CommonApiServiceFactory : CommonServiceFactory
                             .UseInMemoryStore()
                             .UseApiSecret(TestUtils.GetApiSecret());
 
+        // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
         if (store != null)
             builder = builder.UseStore(store);
         else
@@ -114,7 +116,7 @@ internal class CommonApiService : CommonService
         return _simulation.Generate(_expiryInSeconds);
     }
 
-    public Task<AltchaValidationResult> Validate(string altcha64)
+    public Task<AltchaValidationResult> Validate(string? altcha64)
     {
         return _service.Validate(altcha64);
     }
@@ -134,7 +136,7 @@ internal class CommonDefaultService : CommonService
         return _service.Generate();
     }
 
-    public Task<AltchaValidationResult> Validate(string altcha64)
+    public Task<AltchaValidationResult> Validate(string? altcha64)
     {
         return _service.Validate(altcha64);
     }

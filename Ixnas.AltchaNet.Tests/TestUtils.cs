@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 using Ixnas.AltchaNet.Tests.Abstractions;
 
 namespace Ixnas.AltchaNet.Tests;
@@ -11,6 +12,10 @@ internal static class TestUtils
             [CommonServiceType.Default] = new CommonDefaultServiceFactory(),
             [CommonServiceType.Api] = new CommonApiServiceFactory()
         }.ToImmutableDictionary();
+    public readonly static JsonSerializerOptions JsonSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
 
     public static byte[] GetKey()
     {

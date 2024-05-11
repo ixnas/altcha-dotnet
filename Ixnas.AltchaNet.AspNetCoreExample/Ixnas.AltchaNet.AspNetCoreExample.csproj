@@ -15,4 +15,8 @@
         <ProjectReference Include="..\Ixnas.AltchaNet\Ixnas.AltchaNet.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="wwwroot\" />
+    </ItemGroup>
+
 </Project>

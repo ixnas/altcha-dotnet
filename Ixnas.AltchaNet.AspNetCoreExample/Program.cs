@@ -3,32 +3,24 @@ using Ixnas.AltchaNet;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
+var apiSecret = builder.Configuration.GetValue<string>("ApiSecret");
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddMvc(options => options.EnableEndpointRouting = false);
 builder.Services.AddSingleton(Altcha.CreateServiceBuilder()
                                     .UseSha256(GenerateKey())
                                     .UseInMemoryStore()
                                     .SetExpiryInSeconds(5)
                                     .Build());
+builder.Services.AddSingleton(Altcha.CreateApiServiceBuilder()
+                                    .UseApiSecret(apiSecret)
+                                    .UseInMemoryStore()
+                                    .Build());
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
 app.UseHttpsRedirection();
-app.UseDefaultFiles();
-app.UseStaticFiles();
-
-app.MapGet("/challenge",
-           (AltchaService service) => service.Generate());
-
-app.MapPost("/verify",
-            async (AltchaService service, [FromForm] string altcha) => new
-            {
-                (await service.Validate(altcha)).IsValid
-            })
-   .DisableAntiforgery();
+app.UseRouting();
+app.UseMvc();
 
 app.Run();
 

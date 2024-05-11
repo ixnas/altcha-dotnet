@@ -57,4 +57,11 @@ namespace Ixnas.AltchaNet.Exceptions
     public class MissingStoreException : AltchaException
     {
     }
+
+    /// <summary>
+    ///     Thrown when attempting to set the maximum spam filter score to a negative or zero value.
+    /// </summary>
+    public class InvalidMaxSpamFilterScoreException : AltchaException
+    {
+    }
 }
