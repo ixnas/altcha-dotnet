@@ -1,13 +1,14 @@
-using System;
 using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal;
-using Ixnas.AltchaNet.Internal.Challenge;
-using Ixnas.AltchaNet.Internal.Converters;
-using Ixnas.AltchaNet.Internal.Cryptography;
-using Ixnas.AltchaNet.Internal.Response;
-using Ixnas.AltchaNet.Internal.Salt;
-using Ixnas.AltchaNet.Internal.Serialization;
+using Ixnas.AltchaNet.Internal.Common.Cryptography;
+using Ixnas.AltchaNet.Internal.Common.Serialization;
+using Ixnas.AltchaNet.Internal.Common.Stores;
+using Ixnas.AltchaNet.Internal.Common.Utilities;
+using Ixnas.AltchaNet.Internal.ProofOfWork;
+using Ixnas.AltchaNet.Internal.ProofOfWork.Common;
+using Ixnas.AltchaNet.Internal.ProofOfWork.Generation;
+using Ixnas.AltchaNet.Internal.ProofOfWork.Validation;
 
 namespace Ixnas.AltchaNet
 {
@@ -57,30 +58,37 @@ namespace Ixnas.AltchaNet
 
             var store = _store ?? new InMemoryStore(_clock);
             var serializer = new SystemTextJsonSerializer();
-            var randomNumberGenerator = new RandomNumberGenerator();
+            var secretNumberGenerator = new RandomNumberGenerator(_min, _max);
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
-            var bytesStringConverter = new BytesStringConverter();
-            var saltGenerator = new TimestampedSaltGenerator(serializer,
-                                                             randomNumberGenerator,
-                                                             _clock,
-                                                             _expiryInSeconds);
-            var saltParser = new DefaultTimestampedSaltParser(serializer);
-            var challengeStringToBytesConverter =
-                new DefaultChallengeStringToBytesConverter(bytesStringConverter);
+            var saltRandomNumberGenerator = new RandomNumberGenerator(1000, 9999);
+            var saltGenerator = new SaltGenerator(serializer,
+                                                  saltRandomNumberGenerator,
+                                                  _clock,
+                                                  _expiryInSeconds);
+            var saltParser = new SelfHostedSaltParser(serializer, _clock);
+            var payloadToBytesConverter =
+                new SelfHostedPayloadConverter();
+            var signatureGenerator =
+                new SignatureGenerator(cryptoAlgorithm, payloadToBytesConverter);
+            var challengeStringGenerator =
+                new ChallengeStringGenerator(cryptoAlgorithm);
+            var challengeFactory = new ChallengeParser(cryptoAlgorithm,
+                                                       saltParser,
+                                                       challengeStringGenerator);
+            var signatureParser =
+                new SignatureParser(payloadToBytesConverter, cryptoAlgorithm);
+            var altchaParser = new AltchaResponseParser(serializer,
+                                                        challengeFactory,
+                                                        signatureParser);
 
-            var challengeGenerator = new ChallengeGenerator(saltGenerator,
-                                                            randomNumberGenerator,
-                                                            bytesStringConverter,
-                                                            cryptoAlgorithm,
-                                                            _min,
-                                                            _max);
-            var responseValidator = new ResponseValidator(store,
-                                                          serializer,
-                                                          saltParser,
-                                                          bytesStringConverter,
-                                                          cryptoAlgorithm,
-                                                          _clock,
-                                                          challengeStringToBytesConverter);
+            var challengeGenerator =
+                new ChallengeGenerator(challengeStringGenerator,
+                                       cryptoAlgorithm,
+                                       saltGenerator,
+                                       secretNumberGenerator,
+                                       signatureGenerator);
+
+            var responseValidator = new ResponseValidator(store, altchaParser);
 
             return new AltchaService(challengeGenerator, responseValidator);
         }
@@ -92,8 +100,7 @@ namespace Ixnas.AltchaNet
         /// <returns>A new instance of the builder with the updated configuration.</returns>
         public AltchaServiceBuilder UseStore(IAltchaChallengeStore store)
         {
-            if (store == null)
-                throw new ArgumentNullException();
+            Guard.NotNull(store);
             return new AltchaServiceBuilder(store,
                                             _clock,
                                             _key,
@@ -110,8 +117,7 @@ namespace Ixnas.AltchaNet
         /// <returns>A new instance of the builder with the updated configuration.</returns>
         public AltchaServiceBuilder UseSha256(byte[] key)
         {
-            if (key == null)
-                throw new ArgumentNullException();
+            Guard.NotNull(key);
             if (key.Length != Defaults.RequiredKeySize)
                 throw new InvalidKeyException();
             return new AltchaServiceBuilder(_store,
@@ -185,8 +191,7 @@ namespace Ixnas.AltchaNet
         /// <returns>A new instance of the builder with the updated configuration.</returns>
         public AltchaServiceBuilder UseClock(Clock clock)
         {
-            if (clock == null)
-                throw new ArgumentNullException();
+            Guard.NotNull(clock);
             return new AltchaServiceBuilder(_store,
                                             clock,
                                             _key,

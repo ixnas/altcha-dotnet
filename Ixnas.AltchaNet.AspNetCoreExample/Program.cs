@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using Ixnas.AltchaNet;
-using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 var apiSecret = builder.Configuration.GetValue<string>("ApiSecret");

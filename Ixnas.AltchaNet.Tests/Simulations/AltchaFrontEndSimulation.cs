@@ -28,7 +28,8 @@ internal class AltchaFrontEndSimulation
 #pragma warning restore CA1822
                                               Func<string, string>? malformSignatureFn = null,
                                               Func<string, string>? malformChallengeFn = null,
-                                              Func<string, string>? malformSaltFn = null)
+                                              Func<string, string>? malformSaltFn = null,
+                                              Func<int>? replaceSecretNumberFn = null)
     {
         for (var number = 0; number <= altchaChallenge.Maxnumber; number++)
         {
@@ -48,7 +49,8 @@ internal class AltchaFrontEndSimulation
                                                 altchaChallenge.Signature,
                                                 malformSignatureFn,
                                                 malformChallengeFn,
-                                                malformSaltFn);
+                                                malformSaltFn,
+                                                replaceSecretNumberFn);
             return new AltchaFrontEndSimulationResult
             {
                 Succeeded = true,
@@ -85,7 +87,8 @@ internal class AltchaFrontEndSimulation
                                              string signature,
                                              Func<string, string>? malformSignatureFn,
                                              Func<string, string>? malformChallengeFn,
-                                             Func<string, string>? malformSaltFn)
+                                             Func<string, string>? malformSaltFn,
+                                             Func<int>? replaceSecretNumberFn)
     {
         if (malformSignatureFn != null)
             signature = malformSignatureFn(signature);
@@ -95,6 +98,9 @@ internal class AltchaFrontEndSimulation
 
         if (malformSaltFn != null)
             salt = malformSaltFn(salt);
+
+        if (replaceSecretNumberFn != null)
+            number = replaceSecretNumberFn();
 
         var req = new Req
         {

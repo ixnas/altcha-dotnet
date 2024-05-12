@@ -128,7 +128,7 @@ public class CommonChallengeTests
     {
         var service = TestUtils.ServiceFactories[commonServiceType]
                                .GetDefaultService();
-        await TestMalformedSimulation(service, signature => prefix + signature[1..], null);
+        await TestMalformedSimulation(service, signature => prefix + signature[1..], null, null);
     }
 
     [Theory]
@@ -142,7 +142,21 @@ public class CommonChallengeTests
     {
         var service = TestUtils.ServiceFactories[commonServiceType]
                                .GetDefaultService();
-        await TestMalformedSimulation(service, null, challenge => prefix + challenge[1..]);
+        await TestMalformedSimulation(service, null, challenge => prefix + challenge[1..], null);
+    }
+
+    [Theory]
+    [InlineData(CommonServiceType.Default)]
+    [InlineData(CommonServiceType.Api)]
+    public async Task GivenWrongSecretNumber_WhenCallingValidate_ReturnsNegativeResult(
+        CommonServiceType commonServiceType)
+    {
+        var service = TestUtils.ServiceFactories[commonServiceType]
+                               .GetDefaultService();
+        await TestMalformedSimulation(service,
+                                      null,
+                                      null,
+                                      () => -1);
     }
 
     [Theory]
@@ -212,13 +226,16 @@ public class CommonChallengeTests
 
     private async static Task TestMalformedSimulation(CommonService service,
                                                       Func<string, string>? malformSignatureFn,
-                                                      Func<string, string>? malformChallengeFn)
+                                                      Func<string, string>? malformChallengeFn,
+                                                      Func<int>? replaceSecretNumberFn)
     {
         var challenge = service.Generate();
         var simulation = new AltchaFrontEndSimulation();
         var result = simulation.Run(challenge,
                                     malformSignatureFn,
-                                    malformChallengeFn);
+                                    malformChallengeFn,
+                                    null,
+                                    replaceSecretNumberFn);
         var validationResult = await service.Validate(result.AltchaJson);
 
         Assert.True(result.Succeeded);

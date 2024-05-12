@@ -14,6 +14,6 @@ namespace Ixnas.AltchaNet.Debug
         /// <summary>
         ///     Returns the current UTC time.
         /// </summary>
-        DateTimeOffset GetUtcNow();
+        DateTimeOffset UtcNow { get; }
     }
 }

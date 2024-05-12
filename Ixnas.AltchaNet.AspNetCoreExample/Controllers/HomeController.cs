@@ -18,9 +18,9 @@ public class HomeController : Controller
         public string ApiKey { get; set; } = string.Empty;
     }
 
+    private readonly AltchaApiService _apiService;
     private readonly IConfiguration _configuration;
     private readonly AltchaService _service;
-    private readonly AltchaApiService _apiService;
 
     public HomeController(AltchaService service, AltchaApiService apiService, IConfiguration configuration)
     {
@@ -32,7 +32,7 @@ public class HomeController : Controller
     [HttpGet]
     public ActionResult Index()
     {
-        var viewModel = new ViewModel()
+        var viewModel = new ViewModel
         {
             ApiKey = _configuration["ApiKey"] ?? string.Empty
         };
@@ -52,7 +52,8 @@ public class HomeController : Controller
     }
 
     [HttpPost("/verifyApiSpamFiltered")]
-    public async Task<AltchaSpamFilteredValidationResult> VerifyApiSpamFiltered([FromForm] FormModel formModel)
+    public async Task<AltchaSpamFilteredValidationResult> VerifyApiSpamFiltered(
+        [FromForm] FormModel formModel)
     {
         return await _apiService.ValidateSpamFilteredForm(formModel);
     }

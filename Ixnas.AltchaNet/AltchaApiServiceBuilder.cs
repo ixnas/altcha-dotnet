@@ -1,12 +1,14 @@
-using System;
 using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal;
-using Ixnas.AltchaNet.Internal.Converters;
-using Ixnas.AltchaNet.Internal.Cryptography;
-using Ixnas.AltchaNet.Internal.Response;
-using Ixnas.AltchaNet.Internal.Salt;
-using Ixnas.AltchaNet.Internal.Serialization;
+using Ixnas.AltchaNet.Internal.Common.Converters;
+using Ixnas.AltchaNet.Internal.Common.Cryptography;
+using Ixnas.AltchaNet.Internal.Common.Serialization;
+using Ixnas.AltchaNet.Internal.Common.Stores;
+using Ixnas.AltchaNet.Internal.Common.Utilities;
+using Ixnas.AltchaNet.Internal.ProofOfWork;
+using Ixnas.AltchaNet.Internal.ProofOfWork.Common;
+using Ixnas.AltchaNet.Internal.ProofOfWork.Validation;
 using Ixnas.AltchaNet.Internal.SpamFilter;
 
 namespace Ixnas.AltchaNet
@@ -16,7 +18,6 @@ namespace Ixnas.AltchaNet
     /// </summary>
     public sealed class AltchaApiServiceBuilder
     {
-        private readonly BytesStringConverter _bytesStringConverter = new BytesStringConverter();
         private readonly Clock _clock = new DefaultClock();
         private readonly byte[] _key;
         private readonly double _maxSpamFilterScore = Defaults.MaxSpamFilterScore;
@@ -52,22 +53,31 @@ namespace Ixnas.AltchaNet
             var store = _store ?? new InMemoryStore(_clock);
             var serializer = new SystemTextJsonSerializer();
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
-            var saltParser = new ApiSaltParser();
-            var challengeStringToBytesConverter =
-                new ApiChallengeStringToBytesConverter(_bytesStringConverter);
+            var saltParser = new ApiSaltParser(_clock);
+            var responseValidatorPayloadConverter =
+                new ApiPayloadConverter();
+            var responseValidatorSignatureParser =
+                new SignatureParser(responseValidatorPayloadConverter,
+                                    cryptoAlgorithm);
+            var challengeStringGenerator =
+                new ChallengeStringGenerator(cryptoAlgorithm);
+            var challengeFactory = new ChallengeParser(cryptoAlgorithm, saltParser, challengeStringGenerator);
+            var spamFilterValidatorPayloadConverter =
+                new ApiSpamFilterPayloadConverter(cryptoAlgorithm);
+            var spamFilterValidatorSignatureParser =
+                new SignatureParser(spamFilterValidatorPayloadConverter,
+                                    cryptoAlgorithm);
+            var responseValidatorAltchaParser = new AltchaResponseParser(serializer,
+                                                                             challengeFactory,
+                                                                             responseValidatorSignatureParser);
             var responseValidator = new ResponseValidator(store,
-                                                          serializer,
-                                                          saltParser,
-                                                          _bytesStringConverter,
-                                                          cryptoAlgorithm,
-                                                          _clock,
-                                                          challengeStringToBytesConverter);
+                                                          responseValidatorAltchaParser);
             var spamFilterValidator =
                 new SpamFilterValidator(serializer,
                                         cryptoAlgorithm,
-                                        _bytesStringConverter,
                                         _clock,
                                         store,
+                                        spamFilterValidatorSignatureParser,
                                         _maxSpamFilterScore);
             return new AltchaApiService(responseValidator, spamFilterValidator);
         }
@@ -85,7 +95,7 @@ namespace Ixnas.AltchaNet
             if (!apiSecret.StartsWith("csec_") && !apiSecret.StartsWith("sec_"))
                 throw new InvalidApiSecretException();
 
-            var key = _bytesStringConverter.GetByteArrayFromUtf8String(apiSecret);
+            var key = ByteConverter.GetByteArrayFromUtf8String(apiSecret);
             return new AltchaApiServiceBuilder(key,
                                                _useInMemoryStore,
                                                _store,
@@ -114,8 +124,7 @@ namespace Ixnas.AltchaNet
         /// <returns>A new instance of the builder with the updated configuration.</returns>
         public AltchaApiServiceBuilder UseStore(IAltchaChallengeStore store)
         {
-            if (store == null)
-                throw new ArgumentNullException();
+            Guard.NotNull(store);
             return new AltchaApiServiceBuilder(_key,
                                                _useInMemoryStore,
                                                store,

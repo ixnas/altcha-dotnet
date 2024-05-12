@@ -6,9 +6,10 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Web;
 using Ixnas.AltchaNet.Debug;
-using Ixnas.AltchaNet.Internal.Converters;
-using Ixnas.AltchaNet.Internal.Cryptography;
-using Ixnas.AltchaNet.Internal.Serialization;
+using Ixnas.AltchaNet.Internal.Common.Converters;
+using Ixnas.AltchaNet.Internal.Common.Cryptography;
+using Ixnas.AltchaNet.Internal.Common.Serialization;
+using Ixnas.AltchaNet.Internal.Common.Utilities;
 
 namespace Ixnas.AltchaNet.Internal.SpamFilter
 {
@@ -43,40 +44,40 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             public bool Verified { get; set; }
         }
 
-        private readonly BytesStringConverter _bytesStringConverter;
         private readonly Clock _clock;
         private readonly CryptoAlgorithm _cryptoAlgorithm;
         private readonly double _maxSpamFilterScore;
         private readonly JsonSerializer _serializer;
+        private readonly SignatureParser _signatureParser;
         private readonly IAltchaChallengeStore _store;
 
         public SpamFilterValidator(JsonSerializer serializer,
                                    CryptoAlgorithm cryptoAlgorithm,
-                                   BytesStringConverter bytesStringConverter,
                                    Clock clock,
                                    IAltchaChallengeStore store,
+                                   SignatureParser signatureParser,
                                    double maxSpamFilterScore)
         {
             _serializer = serializer;
             _cryptoAlgorithm = cryptoAlgorithm;
-            _bytesStringConverter = bytesStringConverter;
             _clock = clock;
             _store = store;
             _maxSpamFilterScore = maxSpamFilterScore;
+            _signatureParser = signatureParser;
         }
 
         public async Task<AltchaSpamFilteredValidationResult> ValidateSpamFilteredForm<T>(
             T form,
             Expression<Func<T, string>> altchaSelector)
         {
-            if (form == null)
-                throw new ArgumentNullException();
+            Guard.NotNull(form);
             var parsedForm = ParseForm(form, altchaSelector);
 
             SpamFilterVerificationData verificationData = null;
             var isValid = TryDeserializeAltcha(parsedForm.Altcha, out var altcha)
                           && AlgorithmMatches(altcha.Algorithm)
-                          && SignatureIsValid(altcha.Signature, altcha.VerificationData)
+                          && _signatureParser.TryParse(altcha.Signature, out var signature)
+                          && signature.PayloadIsValid(altcha.VerificationData)
                           && await ChallengeIsNew(altcha.VerificationData)
                           && TryParseVerificationData(altcha.VerificationData, out verificationData)
                           && verificationData.Verified
@@ -163,22 +164,6 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             return _cryptoAlgorithm.Name == algorithm;
         }
 
-        private bool SignatureIsValid(string signature, string verificationData)
-        {
-            if (string.IsNullOrWhiteSpace(signature) || string.IsNullOrWhiteSpace(verificationData))
-                return false;
-
-            var signatureResult = _bytesStringConverter.GetByteArrayFromHexString(signature);
-            if (!signatureResult.Success)
-                return false;
-
-            var verificationDataHash =
-                _cryptoAlgorithm.GetHash(_bytesStringConverter.GetByteArrayFromUtf8String(verificationData));
-            var verificationDataHashSigned = _cryptoAlgorithm.GetSignature(verificationDataHash);
-
-            return verificationDataHashSigned.SequenceEqual(signatureResult.Value);
-        }
-
         private async Task<bool> ChallengeIsNew(string altchaVerificationData)
         {
             return !await _store.Exists(altchaVerificationData);
@@ -213,7 +198,7 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
         private bool TimestampIsValid(DateTimeOffset timestamp)
         {
             // stryker disable once equality: Impossible to black box test to exactly now.
-            return _clock.GetUtcNow() < timestamp;
+            return _clock.UtcNow < timestamp;
         }
 
         private bool FormFieldsMatch(Form parsedForm, SpamFilterVerificationData verificationData)
@@ -229,8 +214,8 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
 
             var combinedFields = string.Join("\n", fieldsToHash.Select(field => field.Value));
             var calculatedHash =
-                _bytesStringConverter.GetHexStringFromBytes(_cryptoAlgorithm.GetHash(_bytesStringConverter
-                                                                         .GetByteArrayFromUtf8String(combinedFields)));
+                ByteConverter.GetHexStringFromBytes(_cryptoAlgorithm.Hash(ByteConverter
+                                                                        .GetByteArrayFromUtf8String(combinedFields)));
 
             var fieldsHash = verificationData.FieldHash;
             return calculatedHash == fieldsHash;

@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Ixnas.AltchaNet.Internal.Challenge;
-using Ixnas.AltchaNet.Internal.Response;
+using Ixnas.AltchaNet.Internal.ProofOfWork;
 
 namespace Ixnas.AltchaNet
 {

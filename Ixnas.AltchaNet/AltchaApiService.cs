@@ -1,7 +1,7 @@
 using System;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using Ixnas.AltchaNet.Internal.Response;
+using Ixnas.AltchaNet.Internal.ProofOfWork;
 using Ixnas.AltchaNet.Internal.SpamFilter;
 
 namespace Ixnas.AltchaNet
