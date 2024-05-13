@@ -30,8 +30,8 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Validation
             {
                 Success = true,
                 Value = new Challenge(_cryptoAlgorithm.Name,
-                                            parsedSalt,
-                                            challengeString)
+                                      parsedSalt,
+                                      challengeString)
             };
         }
     }

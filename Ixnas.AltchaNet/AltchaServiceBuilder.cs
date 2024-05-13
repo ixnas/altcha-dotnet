@@ -2,6 +2,7 @@ using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal;
 using Ixnas.AltchaNet.Internal.Common.Cryptography;
+using Ixnas.AltchaNet.Internal.Common.Salt;
 using Ixnas.AltchaNet.Internal.Common.Serialization;
 using Ixnas.AltchaNet.Internal.Common.Stores;
 using Ixnas.AltchaNet.Internal.Common.Utilities;
@@ -60,12 +61,9 @@ namespace Ixnas.AltchaNet
             var serializer = new SystemTextJsonSerializer();
             var secretNumberGenerator = new RandomNumberGenerator(_min, _max);
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
-            var saltRandomNumberGenerator = new RandomNumberGenerator(1000, 9999);
-            var saltGenerator = new SaltGenerator(serializer,
-                                                  saltRandomNumberGenerator,
-                                                  _clock,
+            var saltGenerator = new SaltGenerator(_clock,
                                                   _expiryInSeconds);
-            var saltParser = new SelfHostedSaltParser(serializer, _clock);
+            var saltParser = new SaltParser(_clock);
             var payloadToBytesConverter =
                 new SelfHostedPayloadConverter();
             var signatureGenerator =

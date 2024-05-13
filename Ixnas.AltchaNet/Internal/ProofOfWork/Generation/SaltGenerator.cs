@@ -1,7 +1,6 @@
 using Ixnas.AltchaNet.Debug;
+using Ixnas.AltchaNet.Internal.Common.Converters;
 using Ixnas.AltchaNet.Internal.Common.Salt;
-using Ixnas.AltchaNet.Internal.Common.Serialization;
-using Ixnas.AltchaNet.Internal.ProofOfWork.Common;
 
 namespace Ixnas.AltchaNet.Internal.ProofOfWork.Generation
 {
@@ -9,16 +8,10 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Generation
     {
         private readonly Clock _clock;
         private readonly int _expiryInSeconds;
-        private readonly RandomNumberGenerator _randomNumberGenerator;
-        private readonly JsonSerializer _serializer;
 
-        public SaltGenerator(JsonSerializer serializer,
-                             RandomNumberGenerator randomNumberGenerator,
-                             Clock clock,
+        public SaltGenerator(Clock clock,
                              int expiryInSeconds)
         {
-            _serializer = serializer;
-            _randomNumberGenerator = randomNumberGenerator;
             _clock = clock;
             _expiryInSeconds = expiryInSeconds;
         }
@@ -27,15 +20,16 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Generation
         {
             var expiryUtc = _clock.UtcNow
                                   .AddSeconds(_expiryInSeconds);
-            var randomNumber = _randomNumberGenerator.Generate();
-            var serialized = new SelfHostedSaltSerialized
+            var bytes = new byte[12];
+
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
             {
-                // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
-                T = expiryUtc.ToUnixTimeMilliseconds(),
-                R = randomNumber
-            };
-            var raw = _serializer.ToBase64Json(serialized);
-            return new Salt(_clock, raw, expiryUtc);
+                rng.GetBytes(bytes);
+            }
+
+            var randomHexString = ByteConverter.GetHexStringFromBytes(bytes);
+            var withExpiresParameter = $"{randomHexString}?expires={expiryUtc.ToUnixTimeSeconds()}";
+            return new Salt(_clock, withExpiresParameter, expiryUtc);
         }
     }
 }

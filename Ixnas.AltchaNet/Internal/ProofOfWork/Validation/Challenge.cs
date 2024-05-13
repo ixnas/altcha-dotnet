@@ -11,8 +11,8 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Validation
         private readonly Salt _salt;
 
         public Challenge(string algorithm,
-                               Salt salt,
-                               string challengeString)
+                         Salt salt,
+                         string challengeString)
         {
             _algorithm = algorithm;
             _salt = salt;

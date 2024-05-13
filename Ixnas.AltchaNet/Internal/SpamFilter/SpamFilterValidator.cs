@@ -215,7 +215,7 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             var combinedFields = string.Join("\n", fieldsToHash.Select(field => field.Value));
             var calculatedHash =
                 ByteConverter.GetHexStringFromBytes(_cryptoAlgorithm.Hash(ByteConverter
-                                                                        .GetByteArrayFromUtf8String(combinedFields)));
+                                                                 .GetByteArrayFromUtf8String(combinedFields)));
 
             var fieldsHash = verificationData.FieldHash;
             return calculatedHash == fieldsHash;

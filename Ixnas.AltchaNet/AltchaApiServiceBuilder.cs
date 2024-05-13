@@ -3,6 +3,7 @@ using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal;
 using Ixnas.AltchaNet.Internal.Common.Converters;
 using Ixnas.AltchaNet.Internal.Common.Cryptography;
+using Ixnas.AltchaNet.Internal.Common.Salt;
 using Ixnas.AltchaNet.Internal.Common.Serialization;
 using Ixnas.AltchaNet.Internal.Common.Stores;
 using Ixnas.AltchaNet.Internal.Common.Utilities;
@@ -53,7 +54,7 @@ namespace Ixnas.AltchaNet
             var store = _store ?? new InMemoryStore(_clock);
             var serializer = new SystemTextJsonSerializer();
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
-            var saltParser = new ApiSaltParser(_clock);
+            var saltParser = new SaltParser(_clock);
             var responseValidatorPayloadConverter =
                 new ApiPayloadConverter();
             var responseValidatorSignatureParser =
