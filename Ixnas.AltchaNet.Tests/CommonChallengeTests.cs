@@ -168,6 +168,8 @@ public class CommonChallengeTests
     [InlineData(CommonServiceType.Api, null)]
     [InlineData(CommonServiceType.Api, "weirojoij")]
     [InlineData(CommonServiceType.Api, "iowjeroij.jwojeorij")]
+    [InlineData(CommonServiceType.Api, "iowjeroij?jwojeorij")]
+    [InlineData(CommonServiceType.Api, "iowjeroij?expires=oijewr34")]
     public async Task GivenMalformedSalt_WhenCallingValidate_ReturnsNegativeResult(
         CommonServiceType commonServiceType,
         string malformedSalt)

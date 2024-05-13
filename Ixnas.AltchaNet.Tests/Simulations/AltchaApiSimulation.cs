@@ -34,7 +34,7 @@ internal class AltchaApiSimulation
         var nowSeconds = DateTimeOffset.UtcNow.AddSeconds(expiryOffsetSeconds)
                                        .ToUnixTimeSeconds();
         const string randomString = "b9f517664af74946e13c75a5";
-        var salt = $"{nowSeconds}.{randomString}";
+        var salt = $"{randomString}?expires={nowSeconds}&_someOtherProperty=true";
         const int randomNumber = 2;
         var key = Encoding.UTF8.GetBytes(_apiSecret);
         using var hmac = new HMACSHA256(key);

@@ -1,4 +1,5 @@
 using System;
+using System.Web;
 using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Internal.Common.Salt;
 
@@ -17,10 +18,15 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Validation
         {
             if (salt == null)
                 return new Result<Salt>();
-            if (!long.TryParse(salt.Split('.')[0], out _))
+            var queryStringIndex = salt.IndexOf("?", StringComparison.Ordinal);
+            if (queryStringIndex == -1)
+                return new Result<Salt>();
+            var queryString = HttpUtility.ParseQueryString(salt.Substring(queryStringIndex));
+            var expires = queryString["expires"];
+            if (!long.TryParse(expires, out var expiresParsed))
                 return new Result<Salt>();
 
-            var expiryUtc = DateTimeOffset.FromUnixTimeSeconds(long.Parse(salt.Split('.')[0]));
+            var expiryUtc = DateTimeOffset.FromUnixTimeSeconds(expiresParsed);
 
             return new Result<Salt>
             {
