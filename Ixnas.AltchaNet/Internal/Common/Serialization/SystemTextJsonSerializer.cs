@@ -17,12 +17,6 @@ namespace Ixnas.AltchaNet.Internal.Common.Serialization
             return JsonToObject<T>(altchaJson);
         }
 
-        public string ToBase64Json<T>(T obj)
-        {
-            var serialized = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(obj);
-            return Convert.ToBase64String(serialized);
-        }
-
         private static Result<byte[]> Base64ToBytes(string base64)
         {
             try

@@ -24,6 +24,19 @@ public class SelfHostedChallengeTests
         Assert.False(string.IsNullOrEmpty(challenge.Signature));
         Assert.False(string.IsNullOrEmpty(challenge.Salt));
     }
+    
+    [Fact]
+    public void WhenGenerateCalledTwice_ThenRandomStringIsDifferent()
+    {
+        var service = GetDefaultService();
+        var challenge1 = service.Generate();
+        var challenge2 = service.Generate();
+
+        var challenge1RandomString = challenge1.Salt.Split('?')[0];
+        var challenge2RandomString = challenge2.Salt.Split('?')[0];
+        
+        Assert.NotEqual(challenge1RandomString, challenge2RandomString);
+    }
 
     [Fact]
     public void WhenCreateCalled_ThenChallengeAlgorithmIsSha256()

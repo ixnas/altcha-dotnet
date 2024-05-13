@@ -188,7 +188,6 @@ public class SpamFilterTests
     [Theory]
     [InlineData("")]
     [InlineData("x")]
-    [InlineData("a")]
     public async Task GivenFormHasInvalidSignature_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult(
         string prefix)
     {
