@@ -39,7 +39,13 @@ public class HomeController : Controller
         return View(viewModel);
     }
 
-    [HttpPost("/verifyApiSelfHosted")]
+    [HttpGet("/challengeSelfHosted")]
+    public AltchaChallenge ChallengeSelfHosted()
+    {
+        return _service.Generate();
+    }
+
+    [HttpPost("/verifySelfHosted")]
     public async Task<AltchaValidationResult> VerifySelfHosted([FromForm] string altcha)
     {
         return await _service.Validate(altcha);
