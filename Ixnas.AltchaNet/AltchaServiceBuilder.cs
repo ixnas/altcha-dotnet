@@ -1,3 +1,4 @@
+using System;
 using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal;
@@ -23,14 +24,14 @@ namespace Ixnas.AltchaNet
         private readonly byte[] _key;
         private readonly int _max = Defaults.ComplexityMax;
         private readonly int _min = Defaults.ComplexityMin;
-        private readonly IAltchaChallengeStore _store;
+        private readonly Func<IAltchaChallengeStore> _storeFactory;
         private readonly bool _useInMemoryStore;
 
         internal AltchaServiceBuilder()
         {
         }
 
-        private AltchaServiceBuilder(IAltchaChallengeStore store,
+        private AltchaServiceBuilder(Func<IAltchaChallengeStore> storeFactory,
                                      Clock clock,
                                      byte[] key,
                                      int min,
@@ -38,7 +39,7 @@ namespace Ixnas.AltchaNet
                                      int expiryInSeconds,
                                      bool useInMemoryStore)
         {
-            _store = store;
+            _storeFactory = storeFactory;
             _clock = clock;
             _key = key;
             _min = min;
@@ -52,12 +53,13 @@ namespace Ixnas.AltchaNet
         /// </summary>
         public AltchaService Build()
         {
-            if (!_useInMemoryStore && _store == null)
+            if (!_useInMemoryStore && _storeFactory == null)
                 throw new MissingStoreException();
             if (_key == null)
                 throw new MissingAlgorithmException();
 
-            var store = _store ?? new InMemoryStore(_clock);
+            var inMemoryStore = new InMemoryStore(_clock);
+            var storeFactory = _storeFactory ?? (() => inMemoryStore);
             var serializer = new SystemTextJsonSerializer();
             var secretNumberGenerator = new RandomNumberGenerator(_min, _max);
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
@@ -86,7 +88,7 @@ namespace Ixnas.AltchaNet
                                        secretNumberGenerator,
                                        signatureGenerator);
 
-            var responseValidator = new ResponseValidator(store, altchaParser);
+            var responseValidator = new ResponseValidator(storeFactory, altchaParser);
 
             return new AltchaService(challengeGenerator, responseValidator);
         }
@@ -99,7 +101,25 @@ namespace Ixnas.AltchaNet
         public AltchaServiceBuilder UseStore(IAltchaChallengeStore store)
         {
             Guard.NotNull(store);
-            return new AltchaServiceBuilder(store,
+            return new AltchaServiceBuilder(() => store,
+                                            _clock,
+                                            _key,
+                                            _min,
+                                            _max,
+                                            _expiryInSeconds,
+                                            _useInMemoryStore);
+        }
+
+        /// <summary>
+        ///     (Required) Configures a store factory to use for previously verified ALTCHA responses. Used to prevent replay
+        ///     attacks.
+        /// </summary>
+        /// <param name="storeFactory">Store factory function to use.</param>
+        /// <returns>A new instance of the builder with the updated configuration.</returns>
+        public AltchaServiceBuilder UseStore(Func<IAltchaChallengeStore> storeFactory)
+        {
+            Guard.NotNull(storeFactory);
+            return new AltchaServiceBuilder(storeFactory,
                                             _clock,
                                             _key,
                                             _min,
@@ -118,7 +138,7 @@ namespace Ixnas.AltchaNet
             Guard.NotNull(key);
             if (key.Length != Defaults.RequiredKeySize)
                 throw new InvalidKeyException();
-            return new AltchaServiceBuilder(_store,
+            return new AltchaServiceBuilder(_storeFactory,
                                             _clock,
                                             key,
                                             _min,
@@ -154,7 +174,7 @@ namespace Ixnas.AltchaNet
         {
             if (min < 0 || max < 0 || min > max)
                 throw new InvalidComplexityException();
-            return new AltchaServiceBuilder(_store,
+            return new AltchaServiceBuilder(_storeFactory,
                                             _clock,
                                             _key,
                                             min,
@@ -172,7 +192,7 @@ namespace Ixnas.AltchaNet
         {
             if (expiryInSeconds < 1)
                 throw new InvalidExpiryException();
-            return new AltchaServiceBuilder(_store,
+            return new AltchaServiceBuilder(_storeFactory,
                                             _clock,
                                             _key,
                                             _min,
@@ -190,7 +210,7 @@ namespace Ixnas.AltchaNet
         public AltchaServiceBuilder UseClock(Clock clock)
         {
             Guard.NotNull(clock);
-            return new AltchaServiceBuilder(_store,
+            return new AltchaServiceBuilder(_storeFactory,
                                             clock,
                                             _key,
                                             _min,

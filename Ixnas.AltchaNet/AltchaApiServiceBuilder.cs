@@ -1,3 +1,4 @@
+using System;
 using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal;
@@ -22,7 +23,7 @@ namespace Ixnas.AltchaNet
         private readonly Clock _clock = new DefaultClock();
         private readonly byte[] _key;
         private readonly double _maxSpamFilterScore = Defaults.MaxSpamFilterScore;
-        private readonly IAltchaChallengeStore _store;
+        private readonly Func<IAltchaChallengeStore> _storeFactory;
         private readonly bool _useInMemoryStore;
 
         internal AltchaApiServiceBuilder()
@@ -31,13 +32,13 @@ namespace Ixnas.AltchaNet
 
         private AltchaApiServiceBuilder(byte[] key,
                                         bool useInMemoryStore,
-                                        IAltchaChallengeStore store,
+                                        Func<IAltchaChallengeStore> storeFactory,
                                         Clock clock,
                                         double maxSpamFilterScore)
         {
             _key = key;
             _useInMemoryStore = useInMemoryStore;
-            _store = store;
+            _storeFactory = storeFactory;
             _clock = clock;
             _maxSpamFilterScore = maxSpamFilterScore;
         }
@@ -47,11 +48,12 @@ namespace Ixnas.AltchaNet
         /// </summary>
         public AltchaApiService Build()
         {
-            if (!_useInMemoryStore && _store == null)
+            if (!_useInMemoryStore && _storeFactory == null)
                 throw new MissingStoreException();
             if (_key == null)
                 throw new MissingApiSecretException();
-            var store = _store ?? new InMemoryStore(_clock);
+            var inMemoryStore = new InMemoryStore(_clock);
+            var storeFactory = _storeFactory ?? (() => inMemoryStore);
             var serializer = new SystemTextJsonSerializer();
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
             var saltParser = new SaltParser(_clock);
@@ -71,13 +73,13 @@ namespace Ixnas.AltchaNet
             var responseValidatorAltchaParser = new AltchaResponseParser(serializer,
                                                                              challengeFactory,
                                                                              responseValidatorSignatureParser);
-            var responseValidator = new ResponseValidator(store,
+            var responseValidator = new ResponseValidator(storeFactory,
                                                           responseValidatorAltchaParser);
             var spamFilterValidator =
                 new SpamFilterValidator(serializer,
                                         cryptoAlgorithm,
                                         _clock,
-                                        store,
+                                        storeFactory,
                                         spamFilterValidatorSignatureParser,
                                         _maxSpamFilterScore);
             return new AltchaApiService(responseValidator, spamFilterValidator);
@@ -99,7 +101,7 @@ namespace Ixnas.AltchaNet
             var key = ByteConverter.GetByteArrayFromUtf8String(apiSecret);
             return new AltchaApiServiceBuilder(key,
                                                _useInMemoryStore,
-                                               _store,
+                                               _storeFactory,
                                                _clock,
                                                _maxSpamFilterScore);
         }
@@ -128,7 +130,23 @@ namespace Ixnas.AltchaNet
             Guard.NotNull(store);
             return new AltchaApiServiceBuilder(_key,
                                                _useInMemoryStore,
-                                               store,
+                                               () => store,
+                                               _clock,
+                                               _maxSpamFilterScore);
+        }
+
+        /// <summary>
+        ///     (Required) Configures a store factory to use for previously verified ALTCHA responses. Used to prevent replay
+        ///     attacks.
+        /// </summary>
+        /// <param name="storeFactory">Store factory function to use.</param>
+        /// <returns>A new instance of the builder with the updated configuration.</returns>
+        public AltchaApiServiceBuilder UseStore(Func<IAltchaChallengeStore> storeFactory)
+        {
+            Guard.NotNull(storeFactory);
+            return new AltchaApiServiceBuilder(_key,
+                                               _useInMemoryStore,
+                                               storeFactory,
                                                _clock,
                                                _maxSpamFilterScore);
         }
@@ -144,7 +162,7 @@ namespace Ixnas.AltchaNet
                 throw new InvalidMaxSpamFilterScoreException();
             return new AltchaApiServiceBuilder(_key,
                                                _useInMemoryStore,
-                                               _store,
+                                               _storeFactory,
                                                _clock,
                                                maxScore);
         }
@@ -159,7 +177,7 @@ namespace Ixnas.AltchaNet
         {
             return new AltchaApiServiceBuilder(_key,
                                                _useInMemoryStore,
-                                               _store,
+                                               _storeFactory,
                                                clock,
                                                _maxSpamFilterScore);
         }

@@ -31,7 +31,14 @@ namespace Ixnas.AltchaNet.Tests
         [Fact]
         public void GivenStoreIsNull_WhenAddStoreCalled_ThenThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => _builder.UseStore(null));
+            Assert.Throws<ArgumentNullException>(() => _builder.UseStore(null as IAltchaChallengeStore));
+        }
+
+        [Fact]
+        public void GivenStoreFactoryIsNull_WhenAddStoreCalled_ThenThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+                                                     _builder.UseStore(null as Func<IAltchaChallengeStore>));
         }
 
         [Fact]
@@ -39,6 +46,14 @@ namespace Ixnas.AltchaNet.Tests
         {
             var store = new AltchaChallengeStoreFake();
             var builder = _builder.UseStore(store);
+            Assert.NotNull(builder);
+        }
+
+        [Fact]
+        public void GivenStoreFactoryIsNotNull_WhenAddStoreCalled_ThenReturnsBuilder()
+        {
+            var store = new AltchaChallengeStoreFake();
+            var builder = _builder.UseStore(() => store);
             Assert.NotNull(builder);
         }
 
@@ -94,6 +109,16 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Fact]
+        public void GivenStoreFactoryAndKeyAreAdded_WhenBuildCalled_ThenReturnNewService()
+        {
+            var store = new AltchaChallengeStoreFake();
+            var service = _builder.UseStore(() => store)
+                                  .UseApiSecret(TestUtils.GetApiSecret())
+                                  .Build();
+            Assert.NotNull(service);
+        }
+
+        [Fact]
         public void GivenInMemoryStoreAndKeyAreAdded_WhenBuildCalled_ThenReturnNewService()
         {
             var service = _builder.UseInMemoryStore()
@@ -114,6 +139,9 @@ namespace Ixnas.AltchaNet.Tests
 
             var builder4 = builder3.UseInMemoryStore();
             Assert.NotEqual(builder3, builder4);
+
+            var builder5 = builder4.UseStore(() => store);
+            Assert.NotEqual(builder4, builder5);
         }
     }
 }

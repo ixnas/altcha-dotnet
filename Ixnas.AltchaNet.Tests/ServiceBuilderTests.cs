@@ -27,7 +27,14 @@ namespace Ixnas.AltchaNet.Tests
         [Fact]
         public void GivenStoreIsNull_WhenAddStoreCalled_ThenThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => _builder.UseStore(null));
+            Assert.Throws<ArgumentNullException>(() => _builder.UseStore(null as IAltchaChallengeStore));
+        }
+
+        [Fact]
+        public void GivenStoreFactoryIsNull_WhenAddStoreCalled_ThenThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+                                                     _builder.UseStore(null as Func<IAltchaChallengeStore>));
         }
 
         [Fact]
@@ -55,6 +62,14 @@ namespace Ixnas.AltchaNet.Tests
         {
             var store = new AltchaChallengeStoreFake();
             var builder = _builder.UseStore(store);
+            Assert.NotNull(builder);
+        }
+
+        [Fact]
+        public void GivenStoreFactoryIsNotNull_WhenAddStoreCalled_ThenReturnsBuilder()
+        {
+            var store = new AltchaChallengeStoreFake();
+            var builder = _builder.UseStore(() => store);
             Assert.NotNull(builder);
         }
 
@@ -157,6 +172,9 @@ namespace Ixnas.AltchaNet.Tests
 
             var builder6 = builder5.SetExpiryInSeconds(5);
             Assert.NotEqual(builder5, builder6);
+
+            var builder7 = builder6.UseStore(() => store);
+            Assert.NotEqual(builder6, builder7);
         }
     }
 }

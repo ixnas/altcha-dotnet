@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using Ixnas.AltchaNet.Exceptions;
+using Ixnas.AltchaNet.Tests.Fakes;
 using Ixnas.AltchaNet.Tests.Simulations;
 using Xunit;
 
@@ -140,6 +142,36 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.True(result.IsValid);
             Assert.True(result.PassedSpamFilter);
+        }
+
+        [Fact]
+        public async Task GivenStoreFactoryProvided_WhenCallingValidateSpamFilteredForm_InstantiatesStore()
+        {
+            var storeWasInstantiated = false;
+            var service = GetServiceWithStoreFactory(() =>
+            {
+                storeWasInstantiated = true;
+                return new AltchaChallengeStoreFake();
+            });
+            var form = GetDefaultForm();
+            var simulation = GenerateDefaultSpamFiltered(form);
+            form.Altcha = simulation;
+
+            Assert.False(storeWasInstantiated);
+            await service.ValidateSpamFilteredForm(form);
+            Assert.True(storeWasInstantiated);
+        }
+
+        [Fact]
+        public async Task
+            GivenStoreFactoryReturnsNull_WhenCallingValidateSpamFilteredForm_ThrowsMissingStoreException()
+        {
+            var service = GetServiceWithStoreFactory(() => null);
+            var form = GetDefaultForm();
+            var simulation = GenerateDefaultSpamFiltered(form);
+            form.Altcha = simulation;
+
+            await Assert.ThrowsAsync<MissingStoreException>(() => service.ValidateSpamFilteredForm(form));
         }
 
         [Fact]
@@ -398,6 +430,14 @@ namespace Ixnas.AltchaNet.Tests
                          .UseInMemoryStore()
                          .UseApiSecret(TestUtils.GetApiSecret())
                          .SetMaxSpamFilterScore(threshold)
+                         .Build();
+        }
+
+        private static AltchaApiService GetServiceWithStoreFactory(Func<IAltchaChallengeStore> storeFactory)
+        {
+            return Altcha.CreateApiServiceBuilder()
+                         .UseStore(storeFactory)
+                         .UseApiSecret(TestUtils.GetApiSecret())
                          .Build();
         }
     }

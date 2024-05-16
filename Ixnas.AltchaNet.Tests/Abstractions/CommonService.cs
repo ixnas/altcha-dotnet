@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Tests.Simulations;
@@ -17,6 +18,8 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
         CommonService GetServiceWithExpiry(int expiryInSeconds,
                                            IAltchaChallengeStore store = null,
                                            Clock clock = null);
+
+        CommonService GetServiceWithStoreFactory(Func<IAltchaChallengeStore> storeFactory);
     }
 
     internal interface CommonService
@@ -60,6 +63,17 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
             var service = builder.Build();
             return new CommonDefaultService(service);
         }
+
+        public CommonService GetServiceWithStoreFactory(Func<IAltchaChallengeStore> storeFactory)
+        {
+            var key = TestUtils.GetKey();
+            var service = Altcha.CreateServiceBuilder()
+                                .SetComplexity(1, 3)
+                                .UseSha256(key)
+                                .UseStore(storeFactory)
+                                .Build();
+            return new CommonDefaultService(service);
+        }
     }
 
     internal class CommonApiServiceFactory : CommonServiceFactory
@@ -94,6 +108,16 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
 
             var service = builder.Build();
             return new CommonApiService(service, simulation, expiryInSeconds);
+        }
+
+        public CommonService GetServiceWithStoreFactory(Func<IAltchaChallengeStore> storeFactory)
+        {
+            var simulation = new AltchaApiSimulation(TestUtils.GetApiSecret());
+            var service = Altcha.CreateApiServiceBuilder()
+                                .UseStore(storeFactory)
+                                .UseApiSecret(TestUtils.GetApiSecret())
+                                .Build();
+            return new CommonApiService(service, simulation);
         }
     }
 

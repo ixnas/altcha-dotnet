@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Tests.Abstractions;
 using Ixnas.AltchaNet.Tests.Fakes;
 using Ixnas.AltchaNet.Tests.Simulations;
@@ -42,6 +43,42 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.True(result.Succeeded);
             Assert.True(validationResult.IsValid);
+        }
+
+        [Theory]
+        [InlineData(CommonServiceType.Default)]
+        [InlineData(CommonServiceType.Api)]
+        public async Task GivenStoreFactoryProvided_WhenCallingValidate_InstantiatesStore(
+            CommonServiceType commonServiceType)
+        {
+            var storeWasInstantiated = false;
+            var service = TestUtils.ServiceFactories[commonServiceType]
+                                   .GetServiceWithStoreFactory(() =>
+                                   {
+                                       storeWasInstantiated = true;
+                                       return new AltchaChallengeStoreFake();
+                                   });
+            var challenge = service.Generate();
+            var simulation = new AltchaFrontEndSimulation();
+            var result = simulation.Run(challenge);
+
+            Assert.False(storeWasInstantiated);
+            await service.Validate(result.AltchaJson);
+            Assert.True(storeWasInstantiated);
+        }
+
+        [Theory]
+        [InlineData(CommonServiceType.Default)]
+        [InlineData(CommonServiceType.Api)]
+        public async Task GivenStoreFactoryReturnsNull_WhenCallingValidate_ThrowsMissingStoreException(
+            CommonServiceType commonServiceType)
+        {
+            var service = TestUtils.ServiceFactories[commonServiceType]
+                                   .GetServiceWithStoreFactory(() => null);
+            var challenge = service.Generate();
+            var simulation = new AltchaFrontEndSimulation();
+            var result = simulation.Run(challenge);
+            await Assert.ThrowsAsync<MissingStoreException>(() => service.Validate(result.AltchaJson));
         }
 
         [Theory]

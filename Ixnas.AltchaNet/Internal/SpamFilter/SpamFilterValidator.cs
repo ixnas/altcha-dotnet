@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Web;
 using Ixnas.AltchaNet.Debug;
+using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal.Common.Converters;
 using Ixnas.AltchaNet.Internal.Common.Cryptography;
 using Ixnas.AltchaNet.Internal.Common.Serialization;
@@ -49,19 +50,19 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
         private readonly double _maxSpamFilterScore;
         private readonly JsonSerializer _serializer;
         private readonly SignatureParser _signatureParser;
-        private readonly IAltchaChallengeStore _store;
+        private readonly Func<IAltchaChallengeStore> _storeFactory;
 
         public SpamFilterValidator(JsonSerializer serializer,
                                    CryptoAlgorithm cryptoAlgorithm,
                                    Clock clock,
-                                   IAltchaChallengeStore store,
+                                   Func<IAltchaChallengeStore> storeFactory,
                                    SignatureParser signatureParser,
                                    double maxSpamFilterScore)
         {
             _serializer = serializer;
             _cryptoAlgorithm = cryptoAlgorithm;
             _clock = clock;
-            _store = store;
+            _storeFactory = storeFactory;
             _maxSpamFilterScore = maxSpamFilterScore;
             _signatureParser = signatureParser;
         }
@@ -71,6 +72,11 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             Expression<Func<T, string>> altchaSelector)
         {
             Guard.NotNull(form);
+
+            var store = _storeFactory();
+            if (store == null)
+                throw new MissingStoreException();
+
             var parsedForm = ParseForm(form, altchaSelector);
 
             SpamFilterVerificationData verificationData = null;
@@ -78,7 +84,7 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
                           && AlgorithmMatches(altcha.Algorithm)
                           && _signatureParser.TryParse(altcha.Signature, out var signature)
                           && signature.PayloadIsValid(altcha.VerificationData)
-                          && await ChallengeIsNew(altcha.VerificationData)
+                          && await ChallengeIsNew(store, altcha.VerificationData)
                           && TryParseVerificationData(altcha.VerificationData, out verificationData)
                           && verificationData.Verified
                           && TimestampIsValid(verificationData.ExpiryUtc)
@@ -87,7 +93,7 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             if (!isValid)
                 return new AltchaSpamFilteredValidationResult();
 
-            await _store.Store(altcha.VerificationData, verificationData.ExpiryUtc);
+            await store.Store(altcha.VerificationData, verificationData.ExpiryUtc);
 
             if (!PassesSpamFilter(verificationData))
                 return new AltchaSpamFilteredValidationResult
@@ -164,9 +170,9 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             return _cryptoAlgorithm.Name == algorithm;
         }
 
-        private async Task<bool> ChallengeIsNew(string altchaVerificationData)
+        private async Task<bool> ChallengeIsNew(IAltchaChallengeStore store, string altchaVerificationData)
         {
-            return !await _store.Exists(altchaVerificationData);
+            return !await store.Exists(altchaVerificationData);
         }
 
         private static bool TryParseVerificationData(string verificationDataString,
