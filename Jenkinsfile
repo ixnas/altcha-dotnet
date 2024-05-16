@@ -31,12 +31,12 @@ pipeline {
         stage('Unit tests') {
             options { skipDefaultCheckout() }
             steps {
-                bat "dotnet test --no-build --logger:\"junit;LogFilePath=unit-tests.xml\" --collect:\"XPlat Code Coverage\" --results-directory artifacts\\reports"
-                bat "move /y Ixnas.AltchaNet.Tests\\unit-tests.xml artifacts\\reports\\Ixnas.AltchaNet-${GIT_VERSION}-unit-tests.xml"
+                bat "dotnet test --no-build --logger:\"junit;LogFilePath=Ixnas.AltchaNet-${GIT_VERSION}-unit-tests-{framework}.xml\" --collect:\"XPlat Code Coverage\" --results-directory artifacts\\reports"
+                bat "move /y Ixnas.AltchaNet.Tests\\Ixnas.AltchaNet-${GIT_VERSION}-unit-tests-*.xml artifacts\\reports\\"
                 dir('artifacts/reports') {
-                    bat "tar -a -c -f Ixnas.AltchaNet-${GIT_VERSION}-unit-tests.zip Ixnas.AltchaNet-${GIT_VERSION}-unit-tests.xml"
+                    bat "tar -a -c -f Ixnas.AltchaNet-${GIT_VERSION}-unit-tests.zip Ixnas.AltchaNet-${GIT_VERSION}-unit-tests-*.xml"
                 }
-                junit "artifacts/reports/Ixnas.AltchaNet-${GIT_VERSION}-unit-tests.xml"
+                junit "artifacts/reports/Ixnas.AltchaNet-${GIT_VERSION}-unit-tests-*.xml"
                 recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'artifacts/reports/*/coverage.cobertura.xml']], sourceCodeRetention: 'EVERY_BUILD')
                 archiveArtifacts artifacts: "artifacts/reports/Ixnas.AltchaNet-${GIT_VERSION}-unit-tests.zip"
             }

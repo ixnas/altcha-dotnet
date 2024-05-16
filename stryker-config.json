@@ -10,6 +10,7 @@
       "Html"
     ],
     "report-file-name": "mutation-tests",
-    "break-on-initial-test-failure": false
+    "break-on-initial-test-failure": false,
+    "target-framework": "net8.0"
   }
 }

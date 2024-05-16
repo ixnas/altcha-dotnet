@@ -1,17 +1,21 @@
-namespace Ixnas.AltchaNet.Tests.Fakes;
+using System;
+using System.Threading.Tasks;
 
-internal class AltchaChallengeStoreFake : IAltchaChallengeStore
+namespace Ixnas.AltchaNet.Tests.Fakes
 {
-    public (string Challenge, DateTimeOffset Expiry)? Stored { get; private set; }
-
-    public Task Store(string challenge, DateTimeOffset expiryUtc)
+    internal class AltchaChallengeStoreFake : IAltchaChallengeStore
     {
-        Stored = new ValueTuple<string, DateTimeOffset>(challenge, expiryUtc);
-        return Task.CompletedTask;
-    }
+        public (string Challenge, DateTimeOffset Expiry)? Stored { get; private set; }
 
-    public Task<bool> Exists(string challenge)
-    {
-        return Task.FromResult(false);
+        public Task Store(string challenge, DateTimeOffset expiryUtc)
+        {
+            Stored = new ValueTuple<string, DateTimeOffset>(challenge, expiryUtc);
+            return Task.CompletedTask;
+        }
+
+        public Task<bool> Exists(string challenge)
+        {
+            return Task.FromResult(false);
+        }
     }
 }

@@ -1,7 +1,8 @@
-namespace Ixnas.AltchaNet.Tests;
-
-internal interface AltchaForm
+namespace Ixnas.AltchaNet.Tests
 {
-    // ReSharper disable once UnusedMemberInSuper.Global
-    public string? Altcha { get; set; }
+    internal interface AltchaForm
+    {
+        // ReSharper disable once UnusedMemberInSuper.Global
+        string Altcha { get; set; }
+    }
 }
