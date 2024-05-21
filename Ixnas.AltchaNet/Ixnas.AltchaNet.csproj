@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <PackageId>Ixnas.AltchaNet</PackageId>
-        <Description>Server-side implementation of the ALTCHA challenge.</Description>
+        <Description>C# implementation of the ALTCHA challenge.</Description>
         <Copyright>Copyright (c) 2024 Sjoerd Scheffer</Copyright>
         <PackageProjectUrl>https://github.com/ixnas/altcha-dotnet</PackageProjectUrl>
         <RepositoryUrl>https://github.com/ixnas/altcha-dotnet.git</RepositoryUrl>
