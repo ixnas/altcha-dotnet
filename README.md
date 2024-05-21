@@ -9,10 +9,10 @@ C# implementation of the [ALTCHA](http://altcha.org) challenge.
 
 - Compatible with the [ALTCHA client-side widget](https://altcha.org/docs/website-integration/#using-altcha-widget)
 - Independent from ASP.NET (Core)
-- Generating and validating self-hosted challenges
-- Validating challenges from [ALTCHA's public API](https://altcha.org/docs/api/)
-- Validating forms that were spam-filtered by [ALTCHA's spam filter API](https://altcha.org/docs/api/spam-filter-api/)
-- Includes client for solving challenges, enabling [machine-to-machine ALTCHA](https://altcha.org/docs/m2m-altcha/)
+- Generates and validates self-hosted challenges
+- Validates challenges from [ALTCHA's public API](https://altcha.org/docs/api/)
+- Validates forms that were spam-filtered by [ALTCHA's spam filter API](https://altcha.org/docs/api/spam-filter-api/)
+- Solves remotely hosted challenges, enabling [machine-to-machine ALTCHA](https://altcha.org/docs/m2m-altcha/)
 - Replay attack prevention by denying previously verified challenges
 - Expiring challenges
 
