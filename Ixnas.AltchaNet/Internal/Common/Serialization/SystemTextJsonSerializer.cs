@@ -6,6 +6,11 @@ namespace Ixnas.AltchaNet.Internal.Common.Serialization
 {
     internal class SystemTextJsonSerializer : JsonSerializer
     {
+        private readonly static JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
         public Result<T> FromBase64Json<T>(string base64)
         {
             var altchaBytesResult = Base64ToBytes(base64);
@@ -15,6 +20,12 @@ namespace Ixnas.AltchaNet.Internal.Common.Serialization
             var altchaBytes = altchaBytesResult.Value;
             var altchaJson = BytesToString(altchaBytes);
             return JsonToObject<T>(altchaJson);
+        }
+
+        public string ToBase64Json<T>(T obj)
+        {
+            var serialized = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(obj, SerializerOptions);
+            return Convert.ToBase64String(serialized);
         }
 
         private static Result<byte[]> Base64ToBytes(string base64)
@@ -40,16 +51,12 @@ namespace Ixnas.AltchaNet.Internal.Common.Serialization
 
         private static Result<T> JsonToObject<T>(string json)
         {
-            var serializerOptions = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
             try
             {
                 return new Result<T>
                 {
                     Success = true,
-                    Value = System.Text.Json.JsonSerializer.Deserialize<T>(json, serializerOptions)
+                    Value = System.Text.Json.JsonSerializer.Deserialize<T>(json, SerializerOptions)
                 };
             }
             catch (JsonException)

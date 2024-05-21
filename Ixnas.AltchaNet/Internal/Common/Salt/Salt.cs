@@ -19,7 +19,7 @@ namespace Ixnas.AltchaNet.Internal.Common.Salt
         public bool HasExpired()
         {
             // stryker disable once equality: Impossible to black box test to exactly now.
-            return _clock.UtcNow < ExpiryUtc;
+            return ExpiryUtc <= _clock.UtcNow;
         }
     }
 }

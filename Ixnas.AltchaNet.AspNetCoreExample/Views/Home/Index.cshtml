@@ -22,7 +22,7 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-body">
-                            <h4 class="card-heading">Self-hosted</h4>
+                            <h4 class="card-heading mb-3">Self-hosted</h4>
                             <form action="/verifySelfHosted" method="post">
                                 <altcha-widget challengeurl="/challengeSelfHosted"></altcha-widget>
                                 <br/>
@@ -34,7 +34,7 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-body">
-                            <h4 class="card-heading">ALTCHA API - Regular</h4>
+                            <h4 class="card-heading mb-3">ALTCHA API - Regular</h4>
                             <form action="/verifyApiRegular" method="post">
                                 <altcha-widget
                                     challengeurl="https://eu.altcha.org/api/v1/challenge?apiKey=@(Model.ApiKey)">
@@ -48,7 +48,7 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-body">
-                            <h4 class="card-heading">ALTCHA API - Spam filtered</h4>
+                            <h4 class="card-heading mb-3">ALTCHA API - Spam filtered</h4>
                             <form action="/verifyApiSpamFiltered" method="post">
                                 <div class="mb-3">
                                     <label class="form-label" for="email">E-mail</label>
@@ -69,6 +69,14 @@
                                 <br/>
                                 <button type="submit" class="btn btn-secondary">Post</button>
                             </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-heading mb-3">Machine-to-machine ALTCHA</h4>
+                            <a class="btn btn-secondary" href="/simulateMachineToMachine">Run simulation</a>
                         </div>
                     </div>
                 </div>

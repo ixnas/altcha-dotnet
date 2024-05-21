@@ -27,7 +27,7 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Validation
             return _challenge.MatchesAlgorithm(_algorithm)
                    && _challenge.MatchesChallengeString(Challenge)
                    && _signature.PayloadIsValid(Challenge)
-                   && _challenge.HasExpired();
+                   && !_challenge.HasExpired();
         }
     }
 }

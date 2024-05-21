@@ -22,5 +22,14 @@ namespace Ixnas.AltchaNet
         {
             return new AltchaApiServiceBuilder();
         }
+
+        /// <summary>
+        ///     Creates a builder for an ALTCHA solver.
+        /// </summary>
+        /// <returns></returns>
+        public static AltchaSolverBuilder CreateSolverBuilder()
+        {
+            return new AltchaSolverBuilder();
+        }
     }
 }

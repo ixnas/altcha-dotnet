@@ -1,21 +1,11 @@
-using System;
 using Ixnas.AltchaNet.Internal.Common.Cryptography;
 using Ixnas.AltchaNet.Internal.Common.Serialization;
+using Ixnas.AltchaNet.Internal.ProofOfWork.Common;
 
 namespace Ixnas.AltchaNet.Internal.ProofOfWork.Validation
 {
     internal class AltchaResponseParser
     {
-        [Serializable]
-        private class SerializedResponse
-        {
-            public string Algorithm { get; set; }
-            public string Challenge { get; set; }
-            public int Number { get; set; }
-            public string Salt { get; set; }
-            public string Signature { get; set; }
-        }
-
         private readonly ChallengeParser _challengeParser;
         private readonly JsonSerializer _serializer;
         private readonly SignatureParser _signatureParser;
@@ -44,7 +34,7 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Validation
 
         private Result<AltchaResponse> Parse(string altchaBase64)
         {
-            var altchaParsedResult = _serializer.FromBase64Json<SerializedResponse>(altchaBase64);
+            var altchaParsedResult = _serializer.FromBase64Json<SerializedAltchaResponse>(altchaBase64);
             if (!altchaParsedResult.Success)
                 return new Result<AltchaResponse>();
 

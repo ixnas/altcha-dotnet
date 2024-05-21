@@ -170,7 +170,8 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             return _cryptoAlgorithm.Name == algorithm;
         }
 
-        private async Task<bool> ChallengeIsNew(IAltchaChallengeStore store, string altchaVerificationData)
+        private async static Task<bool> ChallengeIsNew(IAltchaChallengeStore store,
+                                                       string altchaVerificationData)
         {
             return !await store.Exists(altchaVerificationData);
         }

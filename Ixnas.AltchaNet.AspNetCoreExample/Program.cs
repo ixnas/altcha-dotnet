@@ -2,6 +2,7 @@ using Ixnas.AltchaNet;
 using Ixnas.AltchaNet.AspNetCoreExample.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,15 @@ builder.Services.AddDbContext<ExampleDbContext>(options =>
                                                     options.UseSqlite(sqliteConnection));
 builder.Services.AddScoped<IAltchaChallengeStore, AltchaChallengeStore>();
 
+// Add HttpClient for machine-to-machine challenges (ignoring SSL issues for this example).
+builder.Services.AddHttpClient(Options.DefaultName, c => { })
+       .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+       {
+           ClientCertificateOptions = ClientCertificateOption.Manual,
+           ServerCertificateCustomValidationCallback =
+               (_, _, _, _) => true
+       });
+
 // Add Altcha services.
 builder.Services.AddScoped(sp => Altcha.CreateServiceBuilder()
                                        .UseSha256(selfHostedKey)
@@ -29,6 +39,8 @@ builder.Services.AddScoped(sp => Altcha.CreateApiServiceBuilder()
                                        .UseApiSecret(apiSecret)
                                        .UseStore(sp.GetService<IAltchaChallengeStore>)
                                        .Build());
+builder.Services.AddScoped(_ => Altcha.CreateSolverBuilder()
+                                      .Build());
 
 builder.Services.AddMvc(options => options.EnableEndpointRouting = false);
 

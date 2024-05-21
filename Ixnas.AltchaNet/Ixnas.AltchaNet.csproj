@@ -17,14 +17,18 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="System.Text.Json" Version="4.6.0"/>
         <None Include="..\README.md" Pack="true" PackagePath=""/>
         <None Include="..\LICENSE.txt" Pack="true" PackagePath=""/>
         <None Include="..\LICENSE-ALTCHA.txt" Pack="true" PackagePath=""/>
     </ItemGroup>
 
-    <ItemGroup>
-      <Reference Include="System.Web" Condition="'$(TargetFramework)' == 'net462'" />
+    <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
+        <Reference Include="System.Web"/>
+        <PackageReference Include="System.Text.Json" Version="4.6.0"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+        <PackageReference Include="System.Text.Json" Version="4.6.0"/>
     </ItemGroup>
 
 </Project>

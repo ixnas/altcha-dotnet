@@ -3,15 +3,16 @@
 [![Build status](https://ci.sjoerdscheffer.nl/job/Altcha.NET/job/main/badge/icon?style=flat-square)](https://ci.sjoerdscheffer.nl/job/Altcha.NET/job/main/)
 [![Nuget version](https://ci.sjoerdscheffer.nl/job/Altcha.NET/job/main/badge/icon?config=nugetBadge&style=flat-square)](https://www.nuget.org/packages/Ixnas.AltchaNet)
 
-Server-side implementation of the [ALTCHA](http://altcha.org) challenge in C#.
+C# implementation of the [ALTCHA](http://altcha.org) challenge.
 
 **Features**
 
 - Compatible with the [ALTCHA client-side widget](https://altcha.org/docs/website-integration/#using-altcha-widget)
 - Independent from ASP.NET (Core)
-- Supports self-hosted challenges
-- Supports [ALTCHA's public API](https://altcha.org/docs/api/) and
-  their [spam filter](https://altcha.org/docs/api/spam-filter-api/)
+- Generating and validating self-hosted challenges
+- Validating challenges from [ALTCHA's public API](https://altcha.org/docs/api/)
+- Validating forms that were spam-filtered by [ALTCHA's spam filter API](https://altcha.org/docs/api/spam-filter-api/)
+- Includes client for solving challenges, enabling [machine-to-machine ALTCHA](https://altcha.org/docs/m2m-altcha/)
 - Replay attack prevention by denying previously verified challenges
 - Expiring challenges
 
@@ -30,6 +31,9 @@ Server-side implementation of the [ALTCHA](http://altcha.org) challenge in C#.
     - [Usage](#usage-1)
         - [Validating a regular response](#validating-a-regular-response)
         - [Validating a spam filtered form](#validating-a-spam-filtered-form)
+- [Solving challenges](#solving-challenges)
+    - [Set up](#set-up-2)
+    - [Usage](#usage-2)
 - [Example](#example)
 - [License](#license)
 
@@ -238,9 +242,48 @@ You should probably reject the form submission if this is not the case.
 The result's `PassedSpamFilter` property tells you whether the form data successfully passed through the spam filter.
 You might want to keep the form submission and mark it as spam in your application for manual approval.
 
+## Solving challenges
+
+### Set up
+
+The entrypoint of this library contains a builder for creating solver instances. The most basic configuration looks like
+this:
+
+```csharp
+var altchaSolver = Altcha.CreateSolverBuilder()
+                         .Build();
+```
+
+Here is a description of the different configuration options.
+
+| Method           | Description                                                                     |
+|------------------|---------------------------------------------------------------------------------|
+| `IgnoreExpiry()` | (Optional) Disables checking for expiry before attempting to solve a challenge. |
+| `Build()`        | Returns a new configured solver instance.                                       |
+
+### Usage
+
+To solve a challenge, first make sure you have a deserialized `AltchaChallange` object to solve. Then you can solve the
+challenge as follows:
+
+```csharp
+var solverResult = altchaSolver.Solve(challenge);
+
+if (!solverResult.Success)
+    /* ... */
+
+var formWithAltcha = new
+{
+    SomeFormField = "some text",
+    Altcha = solverResult.Altcha
+};
+```
+
+This example attaches the solution from `solverResult.Altcha` to a form object as the "altcha" field.
+
 ## Example
 
-You can examine the `AspNetCoreExample` project as a minimal example.
+The `AspNetCoreExample` project contains a few examples for generating, solving and validating challenges.
 
 ## License
 
