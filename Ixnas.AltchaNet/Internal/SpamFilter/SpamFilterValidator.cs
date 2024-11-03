@@ -74,38 +74,56 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             Guard.NotNull(form);
 
             var store = _storeFactory();
-            if (store == null)
-                throw new MissingStoreException();
+            Guard.NotNull<MissingStoreException>(store);
 
-            var parsedForm = ParseForm(form, altchaSelector);
+            var validationResult = await Validate(form, altchaSelector, store);
+            if (!validationResult.Success)
+                return validationResult.Error.ToSpamFilteredValidationResult(false);
 
-            SpamFilterVerificationData verificationData = null;
-            var isValid = TryDeserializeAltcha(parsedForm.Altcha, out var altcha)
-                          && AlgorithmMatches(altcha.Algorithm)
-                          && _signatureParser.TryParse(altcha.Signature, out var signature)
-                          && signature.PayloadIsValid(altcha.VerificationData)
-                          && await ChallengeIsNew(store, altcha.VerificationData)
-                          && TryParseVerificationData(altcha.VerificationData, out verificationData)
-                          && verificationData.Verified
-                          && TimestampIsValid(verificationData.ExpiryUtc)
-                          && FormFieldsMatch(parsedForm, verificationData);
-
-            if (!isValid)
-                return new AltchaSpamFilteredValidationResult();
+            var altcha = validationResult.Value.Altcha;
+            var verificationData = validationResult.Value.VerificationData;
 
             await store.Store(altcha.VerificationData, verificationData.ExpiryUtc);
 
             if (!PassesSpamFilter(verificationData))
-                return new AltchaSpamFilteredValidationResult
-                {
-                    IsValid = true
-                };
+                return Error.Create(ErrorCode.NoError)
+                            .ToSpamFilteredValidationResult(false);
 
-            return new AltchaSpamFilteredValidationResult
-            {
-                IsValid = true,
-                PassedSpamFilter = true
-            };
+            return Error.Create(ErrorCode.NoError)
+                        .ToSpamFilteredValidationResult(true);
+        }
+
+        private async Task<Result<(SpamFilteredAltcha Altcha, SpamFilterVerificationData VerificationData)>>
+            Validate<T>(
+                T form,
+                Expression<Func<T, string>> altchaSelector,
+                IAltchaChallengeStore store)
+        {
+            var parsedForm = ParseForm(form, altchaSelector);
+            return (await new Railway<SpamFilteredAltcha>(DeserializeAltcha(parsedForm.Altcha))
+                          .Then(AlgorithmMatches)
+                          .Then(TryParseSignature)
+                          .Then(PayloadIsValid)
+                          .ThenAsync(altcha => ChallengeIsNew(store, altcha)))
+                   .Then(ParseVerificationData)
+                   .Then(CheckExpiry)
+                   .Then(prev => CheckFormFields(parsedForm, prev.Altcha, prev.VerificationData))
+                   .Result;
+        }
+
+        private Result<(SpamFilteredAltcha Altcha, Signature Signature)> TryParseSignature(
+            SpamFilteredAltcha altcha)
+        {
+            var parseResult = _signatureParser.Parse(altcha.Signature);
+            return Result<(SpamFilteredAltcha, Signature)>.From(parseResult,
+                                                                signature => (altcha, signature));
+        }
+
+        private Result<SpamFilteredAltcha> PayloadIsValid((SpamFilteredAltcha, Signature) parameters)
+        {
+            var (altcha, signature) = parameters;
+            var validationResult = signature.PayloadIsValid(altcha.VerificationData);
+            return Result<SpamFilteredAltcha>.From(validationResult, altcha);
         }
 
         private static Form ParseForm<T>(T form, Expression<Func<T, string>> altchaSelector)
@@ -146,40 +164,34 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             return selector.Member.Name;
         }
 
-        private bool TryDeserializeAltcha(string altchaString, out SpamFilteredAltcha altcha)
+        private Result<SpamFilteredAltcha> DeserializeAltcha(string altchaString)
         {
             if (string.IsNullOrWhiteSpace(altchaString))
-            {
-                altcha = null;
-                return false;
-            }
+                return Result<SpamFilteredAltcha>.Fail(ErrorCode.ChallengeIsInvalidBase64);
 
-            var deserialized = _serializer.FromBase64Json<SpamFilteredAltcha>(altchaString);
-            if (!deserialized.Success)
-            {
-                altcha = null;
-                return false;
-            }
-
-            altcha = deserialized.Value;
-            return true;
+            return _serializer.FromBase64Json<SpamFilteredAltcha>(altchaString);
         }
 
-        private bool AlgorithmMatches(string algorithm)
+        private Result<SpamFilteredAltcha> AlgorithmMatches(SpamFilteredAltcha altcha)
         {
-            return _cryptoAlgorithm.Name == algorithm;
+            if (_cryptoAlgorithm.Name != altcha.Algorithm)
+                return Result<SpamFilteredAltcha>.Fail(ErrorCode.AlgorithmDoesNotMatch);
+            return Result<SpamFilteredAltcha>.Ok(altcha);
         }
 
-        private async static Task<bool> ChallengeIsNew(IAltchaChallengeStore store,
-                                                       string altchaVerificationData)
+        private async static Task<Result<SpamFilteredAltcha>> ChallengeIsNew(IAltchaChallengeStore store,
+            SpamFilteredAltcha altcha)
         {
-            return !await store.Exists(altchaVerificationData);
+            var exists = await store.Exists(altcha.VerificationData);
+            if (exists)
+                return Result<SpamFilteredAltcha>.Fail(ErrorCode.PreviouslyVerified);
+            return Result<SpamFilteredAltcha>.Ok(altcha);
         }
 
-        private static bool TryParseVerificationData(string verificationDataString,
-                                                     out SpamFilterVerificationData verificationData)
+        private static Result<(SpamFilteredAltcha Altcha, SpamFilterVerificationData VerificationData)>
+            ParseVerificationData(SpamFilteredAltcha altcha)
         {
-            var dictionary = HttpUtility.ParseQueryString(verificationDataString);
+            var dictionary = HttpUtility.ParseQueryString(altcha.VerificationData);
             var fieldNames = dictionary["fields"]
                              .Split(',')
                              .ToList();
@@ -190,7 +202,11 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             var verified = dictionary["verified"]
                 .Equals("true", StringComparison.OrdinalIgnoreCase);
 
-            verificationData = new SpamFilterVerificationData
+            if (!verified)
+                return Result<(SpamFilteredAltcha Altcha, SpamFilterVerificationData VerificationData)>
+                    .Fail(ErrorCode.FormSubmissionNotVerified);
+
+            var verificationData = new SpamFilterVerificationData
             {
                 FieldNames = fieldNames,
                 FieldHash = fieldsHash,
@@ -199,16 +215,30 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
                 Verified = verified
             };
 
-            return true;
+            return Result<(SpamFilteredAltcha Altcha, SpamFilterVerificationData VerificationData)>
+                .Ok((altcha, verificationData));
         }
 
-        private bool TimestampIsValid(DateTimeOffset timestamp)
+        private Result<(SpamFilteredAltcha Altcha, SpamFilterVerificationData VerificationData)> CheckExpiry(
+            (SpamFilteredAltcha, SpamFilterVerificationData) parameters)
         {
+            var (altcha, verificationData) = parameters;
+            var timestamp = verificationData.ExpiryUtc;
+
             // stryker disable once equality: Impossible to black box test to exactly now.
-            return _clock.UtcNow < timestamp;
+            var isValid = _clock.UtcNow < timestamp;
+            if (!isValid)
+                return Result<(SpamFilteredAltcha, SpamFilterVerificationData)>.Fail(ErrorCode
+                    .FormSubmissionExpired);
+
+            return Result<(SpamFilteredAltcha, SpamFilterVerificationData)>.Ok((altcha, verificationData));
         }
 
-        private bool FormFieldsMatch(Form parsedForm, SpamFilterVerificationData verificationData)
+        private Result<(SpamFilteredAltcha Altcha, SpamFilterVerificationData VerificationData)>
+            CheckFormFields(
+                Form parsedForm,
+                SpamFilteredAltcha altcha,
+                SpamFilterVerificationData verificationData)
         {
             var fieldNames = verificationData.FieldNames;
 
@@ -217,15 +247,20 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
 
             if (!fieldsToHash.Select(field => field.Key)
                              .SequenceEqual(fieldNames))
-                return false;
+                return Result<(SpamFilteredAltcha, SpamFilterVerificationData)>.Fail(ErrorCode
+                    .FormFieldsDontMatch);
 
             var combinedFields = string.Join("\n", fieldsToHash.Select(field => field.Value));
             var calculatedHash =
                 ByteConverter.GetHexStringFromBytes(_cryptoAlgorithm.Hash(ByteConverter
-                                                                 .GetByteArrayFromUtf8String(combinedFields)));
+                                                        .GetByteArrayFromUtf8String(combinedFields)));
 
             var fieldsHash = verificationData.FieldHash;
-            return calculatedHash == fieldsHash;
+            var fieldValuesMatch = calculatedHash == fieldsHash;
+            if (!fieldValuesMatch)
+                return Result<(SpamFilteredAltcha, SpamFilterVerificationData)>.Fail(ErrorCode
+                    .FormFieldValuesDontMatch);
+            return Result<(SpamFilteredAltcha, SpamFilterVerificationData)>.Ok((altcha, verificationData));
         }
 
         private bool PassesSpamFilter(SpamFilterVerificationData verificationData)

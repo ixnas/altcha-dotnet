@@ -15,7 +15,7 @@ namespace Ixnas.AltchaNet.Internal.Common.Serialization
         {
             var altchaBytesResult = Base64ToBytes(base64);
             if (!altchaBytesResult.Success)
-                return new Result<T>();
+                return Result<T>.Fail(ErrorCode.ChallengeIsInvalidBase64);
 
             var altchaBytes = altchaBytesResult.Value;
             var altchaJson = BytesToString(altchaBytes);
@@ -32,15 +32,11 @@ namespace Ixnas.AltchaNet.Internal.Common.Serialization
         {
             try
             {
-                return new Result<byte[]>
-                {
-                    Success = true,
-                    Value = Convert.FromBase64String(base64)
-                };
+                return Result<byte[]>.Ok(Convert.FromBase64String(base64));
             }
             catch (FormatException)
             {
-                return new Result<byte[]>();
+                return Result<byte[]>.Fail();
             }
         }
 
@@ -53,15 +49,11 @@ namespace Ixnas.AltchaNet.Internal.Common.Serialization
         {
             try
             {
-                return new Result<T>
-                {
-                    Success = true,
-                    Value = System.Text.Json.JsonSerializer.Deserialize<T>(json, SerializerOptions)
-                };
+                return Result<T>.Ok(System.Text.Json.JsonSerializer.Deserialize<T>(json, SerializerOptions));
             }
             catch (JsonException)
             {
-                return new Result<T>();
+                return Result<T>.Fail(ErrorCode.ChallengeIsInvalidJson);
             }
         }
     }

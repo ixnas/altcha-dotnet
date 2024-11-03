@@ -9,5 +9,9 @@ namespace Ixnas.AltchaNet
         ///     Whether the response was valid.
         /// </summary>
         public bool IsValid { get; set; }
+        /// <summary>
+        ///     Challenge validation error.
+        /// </summary>
+        public AltchaValidationError ValidationError { get; set; }
     }
 }

@@ -28,11 +28,12 @@ namespace Ixnas.AltchaNet.Tests.Simulations
 
 #pragma warning disable CA1822
         public AltchaFrontEndSimulationResult Run(AltchaChallenge altchaChallenge,
-#pragma warning restore CA1822
                                                   Func<string, string> malformSignatureFn = null,
                                                   Func<string, string> malformChallengeFn = null,
                                                   Func<string, string> malformSaltFn = null,
-                                                  Func<int> replaceSecretNumberFn = null)
+                                                  Func<int> replaceSecretNumberFn = null,
+                                                  Func<string> replaceAlgorithmFn = null)
+#pragma warning restore CA1822)
         {
             using (var sha = SHA256.Create())
             {
@@ -55,7 +56,8 @@ namespace Ixnas.AltchaNet.Tests.Simulations
                                                         malformSignatureFn,
                                                         malformChallengeFn,
                                                         malformSaltFn,
-                                                        replaceSecretNumberFn);
+                                                        replaceSecretNumberFn,
+                                                        replaceAlgorithmFn);
                     return new AltchaFrontEndSimulationResult
                     {
                         Succeeded = true,
@@ -94,8 +96,10 @@ namespace Ixnas.AltchaNet.Tests.Simulations
                                                  Func<string, string> malformSignatureFn,
                                                  Func<string, string> malformChallengeFn,
                                                  Func<string, string> malformSaltFn,
-                                                 Func<int> replaceSecretNumberFn)
+                                                 Func<int> replaceSecretNumberFn,
+                                                 Func<string> replaceAlgorithmFn)
         {
+            var algorithm = "SHA-256";
             if (malformSignatureFn != null)
                 signature = malformSignatureFn(signature);
 
@@ -108,13 +112,16 @@ namespace Ixnas.AltchaNet.Tests.Simulations
             if (replaceSecretNumberFn != null)
                 number = replaceSecretNumberFn();
 
+            if (replaceAlgorithmFn != null)
+                algorithm = replaceAlgorithmFn();
+
             var req = new Req
             {
                 Challenge = challenge,
                 Number = number,
                 Salt = salt,
                 Signature = signature,
-                Algorithm = "SHA-256"
+                Algorithm = algorithm
             };
             var json = JsonSerializer.SerializeToUtf8Bytes(req, TestUtils.JsonSerializerOptions);
             return Convert.ToBase64String(json);

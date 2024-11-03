@@ -19,29 +19,18 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Validation
             _signatureParser = signatureParser;
         }
 
-        public bool TryParse(string altchaBase64, out AltchaResponse altcha)
-        {
-            var parsed = Parse(altchaBase64);
-            if (!parsed.Success)
-            {
-                altcha = null;
-                return false;
-            }
-
-            altcha = parsed.Value;
-            return true;
-        }
-
-        private Result<AltchaResponse> Parse(string altchaBase64)
+        public Result<AltchaResponse> Parse(string altchaBase64)
         {
             var altchaParsedResult = _serializer.FromBase64Json<SerializedAltchaResponse>(altchaBase64);
             if (!altchaParsedResult.Success)
-                return new Result<AltchaResponse>();
+                return Result<AltchaResponse>.Fail(altchaParsedResult);
 
             var deserialized = altchaParsedResult.Value;
-            if (!_signatureParser.TryParse(deserialized.Signature, out var signature))
-                return new Result<AltchaResponse>();
+            var parseSignatureResult = _signatureParser.Parse(deserialized.Signature);
+            if (!parseSignatureResult.Success)
+                return Result<AltchaResponse>.Fail(parseSignatureResult);
 
+            var signature = parseSignatureResult.Value;
             var secretNumber = deserialized.Number;
             var challenge = deserialized.Challenge;
             var algorithm = deserialized.Algorithm;
@@ -49,18 +38,14 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Validation
 
             var calculatedChallengeResult = _challengeParser.Create(salt, secretNumber);
             if (!calculatedChallengeResult.Success)
-                return new Result<AltchaResponse>();
+                return Result<AltchaResponse>.Fail(calculatedChallengeResult);
 
             var calculatedChallenge = calculatedChallengeResult.Value;
 
-            return new Result<AltchaResponse>
-            {
-                Success = true,
-                Value = new AltchaResponse(signature,
-                                           challenge,
-                                           algorithm,
-                                           calculatedChallenge)
-            };
+            return Result<AltchaResponse>.Ok(new AltchaResponse(signature,
+                                                                challenge,
+                                                                algorithm,
+                                                                calculatedChallenge));
         }
     }
 }

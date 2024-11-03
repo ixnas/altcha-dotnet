@@ -18,7 +18,7 @@ namespace Ixnas.AltchaNet.Internal.Common.Converters
             var isValidHexString = Regex.Match(hexString, "^([A-Fa-f0-9][A-Fa-f0-9]){1,}$")
                                         .Success;
             if (!isValidHexString)
-                return new Result<byte[]>();
+                return Result<byte[]>.Fail();
 
             var bytes = new byte[hexString.Length / 2];
             for (var i = 0; i < hexString.Length; i += 2)
@@ -28,11 +28,7 @@ namespace Ixnas.AltchaNet.Internal.Common.Converters
                 bytes[i / 2] = @byte;
             }
 
-            return new Result<byte[]>
-            {
-                Success = true,
-                Value = bytes
-            };
+            return Result<byte[]>.Ok(bytes);
         }
 
         public static byte[] GetByteArrayFromUtf8String(string utf8String)

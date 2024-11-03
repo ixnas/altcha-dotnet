@@ -6,11 +6,7 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Common
     {
         public Result<byte[]> Convert(string payload)
         {
-            return new Result<byte[]>
-            {
-                Success = true,
-                Value = ByteConverter.GetByteArrayFromUtf8String(payload)
-            };
+            return Result<byte[]>.Ok(ByteConverter.GetByteArrayFromUtf8String(payload));
         }
     }
 }

@@ -15,23 +15,20 @@ namespace Ixnas.AltchaNet.Internal.Common.Salt
 
         public Result<Salt> Parse(string salt)
         {
+            var errorCode = ErrorCode.InvalidSalt;
             if (salt == null)
-                return new Result<Salt>();
+                return Result<Salt>.Fail(errorCode);
             var queryStringIndex = salt.IndexOf("?", StringComparison.Ordinal);
             if (queryStringIndex == -1)
-                return new Result<Salt>();
+                return Result<Salt>.Fail(errorCode);
             var queryString = HttpUtility.ParseQueryString(salt.Substring(queryStringIndex));
             var expires = queryString["expires"];
             if (!long.TryParse(expires, out var expiresParsed))
-                return new Result<Salt>();
+                return Result<Salt>.Fail(errorCode);
 
             var expiryUtc = DateTimeOffset.FromUnixTimeSeconds(expiresParsed);
 
-            return new Result<Salt>
-            {
-                Success = true,
-                Value = new Salt(_clock, salt, expiryUtc)
-            };
+            return Result<Salt>.Ok(new Salt(_clock, salt, expiryUtc));
         }
     }
 }

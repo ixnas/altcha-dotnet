@@ -23,18 +23,35 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
             Guard.NotNullOrWhitespace(altchaBase64);
 
             var store = _storeFactory();
-            if (store == null)
-                throw new MissingStoreException();
+            Guard.NotNull<MissingStoreException>(store);
 
-            var isValid = _altchaResponseParser.TryParse(altchaBase64, out var altcha)
-                          && !await store.Exists(altcha.Challenge)
-                          && altcha.IsValid();
+            var validationResult = await IsValidResponse(altchaBase64, store);
 
-            if (!isValid)
-                return new AltchaValidationResult();
+            if (!validationResult.Success)
+                return validationResult.Error.ToValidationResult();
 
+            var altcha = validationResult.Value;
             await store.Store(altcha.Challenge, altcha.ExpiryUtc);
-            return new AltchaValidationResult { IsValid = true };
+
+            return Error.Create(ErrorCode.NoError)
+                        .ToValidationResult();
+        }
+
+        private async Task<Result<AltchaResponse>> IsValidResponse(
+            string altchaBase64,
+            IAltchaChallengeStore store)
+        {
+            var parseResult = _altchaResponseParser.Parse(altchaBase64);
+            if (!parseResult.Success)
+                return Result<AltchaResponse>.Fail(parseResult);
+
+            var altcha = parseResult.Value;
+            var exists = await store.Exists(altcha.Challenge);
+            if (exists)
+                return Result<AltchaResponse>.Fail(ErrorCode.PreviouslyVerified);
+
+            var validationResult = altcha.Validate();
+            return Result<AltchaResponse>.From(validationResult, altcha);
         }
     }
 }

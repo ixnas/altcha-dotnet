@@ -23,16 +23,12 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Validation
         {
             var parsedSaltResult = _saltParser.Parse(salt);
             if (!parsedSaltResult.Success)
-                return new Result<Challenge>();
+                return Result<Challenge>.Fail(parsedSaltResult);
             var parsedSalt = parsedSaltResult.Value;
             var challengeString = _challengeStringGenerator.Generate(salt, secretNumber);
-            return new Result<Challenge>
-            {
-                Success = true,
-                Value = new Challenge(_cryptoAlgorithm.Name,
-                                      parsedSalt,
-                                      challengeString)
-            };
+            return Result<Challenge>.Ok(new Challenge(_cryptoAlgorithm.Name,
+                                                      parsedSalt,
+                                                      challengeString));
         }
     }
 }

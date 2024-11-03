@@ -30,12 +30,17 @@ namespace Ixnas.AltchaNet.Tests
         public void GivenChallengeStringIsInvalid_WhenSolveCalled_ThenReturnsNegativeResult(
             string replacement)
         {
+            const string expectedErrorMessage = "Challenge is not a valid hex string.";
+            const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.ChallengeIsInvalidHexString;
+
             var challenge = _altchaService.Generate();
             challenge.Challenge = replacement;
             var solver = GetDefaultSolver();
             var result = solver.Solve(challenge);
 
             Assert.False(result.Success);
+            Assert.Equal(expectedErrorMessage, result.Error.Message);
+            Assert.Equal(expectedErrorCode, result.Error.Code);
         }
 
         [Theory]
@@ -44,12 +49,17 @@ namespace Ixnas.AltchaNet.Tests
         [InlineData(" ")]
         public void GivenSignatureIsEmpty_WhenSolveCalled_ThenReturnsNegativeResult(string replacement)
         {
+            const string expectedErrorMessage = "Signature is empty.";
+            const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.SignatureIsEmpty;
+
             var challenge = _altchaService.Generate();
             challenge.Signature = replacement;
             var solver = GetDefaultSolver();
             var result = solver.Solve(challenge);
 
             Assert.False(result.Success);
+            Assert.Equal(expectedErrorMessage, result.Error.Message);
+            Assert.Equal(expectedErrorCode, result.Error.Code);
         }
 
         [Theory]
@@ -58,12 +68,17 @@ namespace Ixnas.AltchaNet.Tests
         [InlineData(" ")]
         public void GivenSaltIsEmpty_WhenSolveCalled_ThenReturnsNegativeResult(string replacement)
         {
+            const string expectedErrorMessage = "Salt is empty.";
+            const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.SaltIsEmpty;
+
             var challenge = _altchaService.Generate();
             challenge.Salt = replacement;
             var solver = GetDefaultSolver();
             var result = solver.Solve(challenge);
 
             Assert.False(result.Success);
+            Assert.Equal(expectedErrorMessage, result.Error.Message);
+            Assert.Equal(expectedErrorCode, result.Error.Code);
         }
 
         [Theory]
@@ -71,17 +86,24 @@ namespace Ixnas.AltchaNet.Tests
         [InlineData(-1)]
         public void GivenMaxNumberIsInvalid_WhenSolveCalled_ThenReturnsNegativeResult(int replacement)
         {
+            const string expectedErrorMessage = "Maximum number should be greater than zero.";
+            const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.InvalidMaxNumber;
+
             var challenge = _altchaService.Generate();
             challenge.Maxnumber = replacement;
             var solver = GetDefaultSolver();
             var result = solver.Solve(challenge);
 
             Assert.False(result.Success);
+            Assert.Equal(expectedErrorMessage, result.Error.Message);
+            Assert.Equal(expectedErrorCode, result.Error.Code);
         }
 
         [Fact]
         public void GivenMaxNumberIsPositive_WhenSolveCalled_ThenReturnsPositiveResult()
         {
+            const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.NoError;
+
             var challenge = Altcha.CreateServiceBuilder()
                                   .UseSha256(TestUtils.GetKey())
                                   .UseInMemoryStore()
@@ -93,17 +115,25 @@ namespace Ixnas.AltchaNet.Tests
             var result = solver.Solve(challenge);
 
             Assert.True(result.Success);
+            Assert.Equal(string.Empty, result.Error.Message);
+            Assert.Equal(expectedErrorCode, result.Error.Code);
         }
 
         [Fact]
         public void GivenMaxNumberIsLowerThanSecretNumber_WhenSolveCalled_ThenReturnsNegativeResult()
         {
+            const string expectedErrorMessage =
+                "Could not solve the challenge. Is the maximum number greater than the secret number?";
+            const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.CouldNotSolveChallenge;
+
             var challenge = _altchaService.Generate();
             challenge.Maxnumber = 2;
             var solver = GetDefaultSolver();
             var result = solver.Solve(challenge);
 
             Assert.False(result.Success);
+            Assert.Equal(expectedErrorMessage, result.Error.Message);
+            Assert.Equal(expectedErrorCode, result.Error.Code);
         }
 
         [Theory]
@@ -112,6 +142,8 @@ namespace Ixnas.AltchaNet.Tests
         public async Task GivenValidChallengeIsSolved_WhenValidated_ThenReturnsPositiveResult(
             CommonServiceType serviceType)
         {
+            const AltchaValidationErrorCode expectedErrorCode = AltchaValidationErrorCode.NoError;
+
             var service = TestUtils.ServiceFactories[serviceType]
                                    .GetDefaultService();
             var challenge = service.Generate();
@@ -120,6 +152,8 @@ namespace Ixnas.AltchaNet.Tests
             var validationResult = await service.Validate(result.Altcha);
 
             Assert.True(validationResult.IsValid);
+            Assert.Equal(string.Empty, validationResult.ValidationError.Message);
+            Assert.Equal(expectedErrorCode, validationResult.ValidationError.Code);
         }
 
         [Theory]
@@ -128,14 +162,19 @@ namespace Ixnas.AltchaNet.Tests
         [InlineData(" ")]
         [InlineData("SHA-512")]
         [InlineData("owejrij")]
-        public void GivenSignatureIsNotSha256_WhenSolveCalled_ThenReturnsNegativeResult(string replacement)
+        public void GivenAlgorithmIsNotSha256_WhenSolveCalled_ThenReturnsNegativeResult(string replacement)
         {
+            const string expectedErrorMessage = "Algorithm is not supported.";
+            const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.AlgorithmNotSupported;
+
             var challenge = _altchaService.Generate();
             challenge.Algorithm = replacement;
             var solver = GetDefaultSolver();
             var result = solver.Solve(challenge);
 
             Assert.False(result.Success);
+            Assert.Equal(expectedErrorMessage, result.Error.Message);
+            Assert.Equal(expectedErrorCode, result.Error.Code);
         }
 
         [Theory]
@@ -144,6 +183,8 @@ namespace Ixnas.AltchaNet.Tests
         public void GivenChallengeIsValid_WhenSolveCalled_ThenReturnsPositiveResult(
             CommonServiceType serviceType)
         {
+            const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.NoError;
+
             var service = TestUtils.ServiceFactories[serviceType]
                                    .GetDefaultService();
             var challenge = service.Generate();
@@ -151,6 +192,9 @@ namespace Ixnas.AltchaNet.Tests
             var result = solver.Solve(challenge);
 
             Assert.True(result.Success);
+
+            Assert.Equal(string.Empty, result.Error.Message);
+            Assert.Equal(expectedErrorCode, result.Error.Code);
         }
 
         [Theory]
@@ -159,6 +203,9 @@ namespace Ixnas.AltchaNet.Tests
         public void GivenChallengeHasExpired_WhenSolveCalled_ThenReturnsNegativeResult(
             CommonServiceType serviceType)
         {
+            const string expectedErrorMessage = "Challenge expired.";
+            const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.ChallengeExpired;
+
             var service = TestUtils.ServiceFactories[serviceType]
                                    .GetServiceWithExpiry(10);
             var challenge = service.Generate();
@@ -167,6 +214,8 @@ namespace Ixnas.AltchaNet.Tests
             var result = solver.Solve(challenge);
 
             Assert.False(result.Success);
+            Assert.Equal(expectedErrorMessage, result.Error.Message);
+            Assert.Equal(expectedErrorCode, result.Error.Code);
         }
 
         [Theory]
@@ -175,6 +224,8 @@ namespace Ixnas.AltchaNet.Tests
         public void GivenIgnoreExpiryIsSet_WhenSolvingExpiredChallengeCalled_ThenReturnsPositiveResult(
             CommonServiceType serviceType)
         {
+            const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.NoError;
+
             var service = TestUtils.ServiceFactories[serviceType]
                                    .GetServiceWithExpiry(10);
             var challenge = service.Generate();
@@ -183,6 +234,8 @@ namespace Ixnas.AltchaNet.Tests
             var result = solver.Solve(challenge);
 
             Assert.True(result.Success);
+            Assert.Equal(string.Empty, result.Error.Message);
+            Assert.Equal(expectedErrorCode, result.Error.Code);
         }
 
         private AltchaSolver GetDefaultSolver()

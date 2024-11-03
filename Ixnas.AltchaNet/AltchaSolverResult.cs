@@ -14,5 +14,9 @@ namespace Ixnas.AltchaNet
         ///     "altcha").
         /// </summary>
         public string Altcha { get; set; }
+        /// <summary>
+        ///     Solver error.
+        /// </summary>
+        public AltchaSolverError Error { get; set; }
     }
 }

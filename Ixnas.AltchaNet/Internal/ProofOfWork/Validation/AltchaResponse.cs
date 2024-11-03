@@ -22,12 +22,19 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Validation
             _challenge = challenge;
         }
 
-        public bool IsValid()
+        public Result Validate()
         {
-            return _challenge.MatchesAlgorithm(_algorithm)
-                   && _challenge.MatchesChallengeString(Challenge)
-                   && _signature.PayloadIsValid(Challenge)
-                   && !_challenge.HasExpired();
+            if (!_challenge.MatchesAlgorithm(_algorithm))
+                return Result.Fail(ErrorCode.AlgorithmDoesNotMatch);
+            if (!_challenge.MatchesChallengeString(Challenge))
+                return Result.Fail(ErrorCode.ChallengeDoesNotMatch);
+            if (!_signature.PayloadIsValid(Challenge)
+                           .Success)
+                return Result.Fail(ErrorCode.PayloadDoesNotMatchSignature);
+            if (_challenge.HasExpired())
+                return Result.Fail(ErrorCode.ChallengeExpired);
+
+            return Result.Ok();
         }
     }
 }

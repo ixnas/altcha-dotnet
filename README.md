@@ -151,7 +151,10 @@ To validate a response:
 ```csharp
 var validationResult = await altchaService.Validate(altchaBase64);
 if (!validationResult.IsValid)
+{
+    _logger.LogInformation(validationResult.ValidationError.Message);
     /* ... */
+}
 ```
 
 The `altchaBase64` parameter represents the raw value from the `altcha` field in a submitted form, so you don't need to
@@ -197,7 +200,10 @@ To validate a regular response:
 ```csharp
 var validationResult = await altchaApiService.Validate(altchaBase64);
 if (!validationResult.IsValid)
+{
+    _logger.LogInformation(validationResult.ValidationError.Message);
     /* ... */
+}
 ```
 
 This works the same way as [self-hosted validation](#validating-a-response).
@@ -224,7 +230,10 @@ To validate the form:
 ```csharp
 var validationResult = await altchaApiService.ValidateSpamFilteredForm(form);
 if (!validationResult.IsValid)
+{
+    _logger.LogInformation(validationResult.ValidationError.Message);
     /* ... */
+}
 
 if (!validationResult.PassedSpamFilter)
     /* ... */
@@ -238,9 +247,11 @@ var validationResult = await altchaApiService.ValidateSpamFilteredForm(form, x =
 
 The result's `IsValid` property tells you whether the form data, verification data and the signature are valid.
 You should probably reject the form submission if this is not the case.
+The `ValidationError` property contains more details on why the validation failed.
 
 The result's `PassedSpamFilter` property tells you whether the form data successfully passed through the spam filter.
 You might want to keep the form submission and mark it as spam in your application for manual approval.
+
 
 ## Solving challenges
 
@@ -270,7 +281,10 @@ challenge as follows:
 var solverResult = altchaSolver.Solve(challenge);
 
 if (!solverResult.Success)
+{
+    _logger.LogInformation(solverResult.Error.Message);
     /* ... */
+}
 
 var formWithAltcha = new
 {

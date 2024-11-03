@@ -40,33 +40,48 @@ namespace Ixnas.AltchaNet
         {
             Guard.NotNull(challenge);
 
-            if (string.IsNullOrWhiteSpace(challenge.Challenge)
-                || string.IsNullOrWhiteSpace(challenge.Signature)
-                || string.IsNullOrWhiteSpace(challenge.Algorithm)
-                || string.IsNullOrWhiteSpace(challenge.Salt)
-                || challenge.Maxnumber < 1
+            if (string.IsNullOrWhiteSpace(challenge.Challenge))
+                return Error.Create(ErrorCode.ChallengeIsInvalidHexString)
+                            .ToSolverResult();
+
+            if (string.IsNullOrWhiteSpace(challenge.Signature))
+                return Error.Create(ErrorCode.SignatureIsEmpty)
+                            .ToSolverResult();
+
+            if (string.IsNullOrWhiteSpace(challenge.Salt))
+                return Error.Create(ErrorCode.SaltIsEmpty)
+                            .ToSolverResult();
+
+            if (challenge.Maxnumber < 1)
+                return Error.Create(ErrorCode.InvalidMaxNumber)
+                            .ToSolverResult();
+
+            if (string.IsNullOrWhiteSpace(challenge.Algorithm)
                 || challenge.Algorithm != _cryptoAlgorithm.Name)
-                return new AltchaSolverResult();
+                return Error.Create(ErrorCode.AlgorithmNotSupported)
+                            .ToSolverResult();
 
             if (!_saltValidator.IsValid(challenge.Salt))
-                return new AltchaSolverResult();
+                return Error.Create(ErrorCode.ChallengeExpired)
+                            .ToSolverResult();
 
             var targetHashResult = GetTargetHash(challenge.Challenge);
             if (!targetHashResult.Success)
-                return new AltchaSolverResult();
+                return Error.Create(ErrorCode.ChallengeIsInvalidHexString)
+                            .ToSolverResult();
+
             var targetHash = targetHashResult.Value;
 
             var secretNumberResult =
                 SolveSecretNumber(challenge.Salt, challenge.Maxnumber, targetHash);
             if (!secretNumberResult.Success)
-                return new AltchaSolverResult();
+                return Error.Create(ErrorCode.CouldNotSolveChallenge)
+                            .ToSolverResult();
             var secretNumber = secretNumberResult.Value;
 
-            return new AltchaSolverResult
-            {
-                Success = true,
-                Altcha = GenerateAltchaResponse(challenge, secretNumber)
-            };
+            var altcha = GenerateAltchaResponse(challenge, secretNumber);
+            return Error.Create(ErrorCode.NoError)
+                        .ToSolverResult(altcha);
         }
 
         private Result<int> SolveSecretNumber(string salt, int maxNumber, byte[] targetHash)
@@ -78,14 +93,10 @@ namespace Ixnas.AltchaNet
                 if (!succeeded)
                     continue;
 
-                return new Result<int>
-                {
-                    Success = true,
-                    Value = number
-                };
+                return Result<int>.Ok(number);
             }
 
-            return new Result<int>();
+            return Result<int>.Fail();
         }
 
         private byte[] GenerateAttemptedHash(string salt, int number)

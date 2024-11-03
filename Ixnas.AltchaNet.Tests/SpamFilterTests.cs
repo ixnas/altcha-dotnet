@@ -65,12 +65,15 @@ namespace Ixnas.AltchaNet.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData(" ")]
-        [InlineData("weorijfosdlkjaewropj")]
-        [InlineData("eyJzb21ldGhpbmciOiJtaXNzaW5nIiwiaGVyZSI6Im5vdyJ9")]
+        [InlineData("weorijfosdlkjaewropj===")]
         public async Task
-            GivenAltchaHasInvalidFormat_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult(
+            GivenAltchaHasInvalidBase64Format_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult(
                 string altcha)
         {
+            const string expectedMessage = "Challenge is not a valid base64 string.";
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.ChallengeIsInvalidBase64;
+
             var service = GetDefaultService();
             var form = GetDefaultForm();
             form.Altcha = altcha;
@@ -78,12 +81,41 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.False(result.IsValid);
             Assert.False(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(expectedMessage, result.ValidationError.Message);
+        }
+
+        [Fact]
+        public async Task
+            GivenAltchaHasInvalidJsonFormat_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult()
+        {
+            const string expectedMessage =
+                "Challenge could be base64-decoded, but could not be parsed as JSON.";
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.ChallengeIsInvalidJson;
+
+            const string altcha = "c29tZXRoaW5nIG1pc3NpbmcgaGVyZSBub3c=";
+            var service = GetDefaultService();
+            var form = GetDefaultForm();
+            form.Altcha = altcha;
+            var result = await service.ValidateSpamFilteredForm(form);
+
+            Assert.False(result.IsValid);
+            Assert.False(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(expectedMessage, result.ValidationError.Message);
         }
 
         [Fact]
         public async Task
             GivenFormHasNoAltchaProperty_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult()
         {
+            const string expectedMessage = "Challenge is not a valid base64 string.";
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.ChallengeIsInvalidBase64;
+
             var service = GetDefaultService();
             var form = new TestFormWithoutAltcha
             {
@@ -95,6 +127,9 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.False(result.IsValid);
             Assert.False(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(expectedMessage, result.ValidationError.Message);
         }
 
         [Theory]
@@ -106,6 +141,9 @@ namespace Ixnas.AltchaNet.Tests
             string validText,
             double score)
         {
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.NoError;
+
             var service = GetDefaultService();
             var form = GetDefaultForm();
             form.Something = validText;
@@ -119,12 +157,18 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.True(result.IsValid);
             Assert.True(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(string.Empty, result.ValidationError.Message);
         }
 
         [Fact]
         public async Task
             GivenFormUsesDifferentAltchaProperty_WhenValidateSpamFilteredFormCalledWithExpression_ReturnsPositiveResult()
         {
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.NoError;
+
             var service = GetDefaultService();
             var form = new TestFormWithDifferentAltchaProperty
             {
@@ -142,6 +186,9 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.True(result.IsValid);
             Assert.True(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(string.Empty, result.ValidationError.Message);
         }
 
         [Fact]
@@ -177,6 +224,10 @@ namespace Ixnas.AltchaNet.Tests
         [Fact]
         public async Task GivenFormIsValid_WhenValidateSpamFilteredFormCalledTwice_ReturnsNegativeResult()
         {
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.PreviouslyVerified;
+            const string expectedErrorString = "Challenge has been verified before.";
+
             var service = GetDefaultService();
             var form = GetDefaultForm();
             var altcha = GenerateDefaultSpamFiltered(form);
@@ -186,11 +237,18 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.False(result.IsValid);
             Assert.False(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(expectedErrorString, result.ValidationError.Message);
         }
 
         [Fact]
         public async Task GivenFormIsExpired_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult()
         {
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.FormSubmissionExpired;
+            const string expectedErrorString = "Form submission has expired.";
+
             var service = GetDefaultService();
             var form = GetDefaultForm();
             var altcha = _apiSimulation.GenerateSpamFiltered(form,
@@ -203,11 +261,19 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.False(result.IsValid);
             Assert.False(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(expectedErrorString, result.ValidationError.Message);
         }
 
         [Fact]
         public async Task GivenFormIsNotVerified_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult()
         {
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.FormSubmissionNotVerified;
+            const string expectedErrorString =
+                "Form submission was not successfully verified by ALTCHA's API.";
+
             var service = GetDefaultService();
             var form = GetDefaultForm();
             var altcha = _apiSimulation.GenerateSpamFiltered(form,
@@ -220,6 +286,9 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.False(result.IsValid);
             Assert.False(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(expectedErrorString, result.ValidationError.Message);
         }
 
         [Theory]
@@ -229,7 +298,9 @@ namespace Ixnas.AltchaNet.Tests
             GivenFormHasInvalidSignature_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult(
                 string prefix)
         {
-            await TestMalformedAltcha(signature => prefix + signature.Substring(1));
+            await TestMalformedAltcha(AltchaSpamFilteredValidationErrorCode.SignatureIsInvalidHexString,
+                                      "Signature is not a valid hex string.",
+                                      signature => prefix + signature.Substring(1));
         }
 
         [Theory]
@@ -239,7 +310,9 @@ namespace Ixnas.AltchaNet.Tests
         public async Task GivenFormHasNoSignature_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult(
             string signature)
         {
-            await TestMalformedAltcha(_ => signature);
+            await TestMalformedAltcha(AltchaSpamFilteredValidationErrorCode.SignatureIsInvalidHexString,
+                                      "Signature is not a valid hex string.",
+                                      _ => signature);
         }
 
         [Theory]
@@ -251,16 +324,22 @@ namespace Ixnas.AltchaNet.Tests
             GivenFormHasInvalidAlgorithm_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult(
                 string signature)
         {
-            await TestMalformedAltcha(null, () => signature);
+            await TestMalformedAltcha(AltchaSpamFilteredValidationErrorCode.AlgorithmDoesNotMatch,
+                                      "Algorithm does not match the algorithm that was configured.",
+                                      null,
+                                      () => signature);
         }
 
         [Fact]
         public async Task
             GivenFormHasMalformedVerificationData_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult()
         {
-            await TestMalformedAltcha(null,
+            await TestMalformedAltcha(AltchaSpamFilteredValidationErrorCode.PayloadDoesNotMatchSignature,
+                                      "Payload does not match signature.",
                                       null,
-                                      verificationData => verificationData.Replace("score=2", "score=x"));
+                                      null,
+                                      verificationData =>
+                                          verificationData.Replace("score=2", "score=x"));
         }
 
         [Theory]
@@ -271,12 +350,19 @@ namespace Ixnas.AltchaNet.Tests
             GivenFormHasEmptyVerificationData_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult(
                 string verificationData)
         {
-            await TestMalformedAltcha(null, null, _ => verificationData);
+            await TestMalformedAltcha(AltchaSpamFilteredValidationErrorCode.PayloadDoesNotMatchSignature,
+                                      "Payload does not match signature.",
+                                      null,
+                                      null,
+                                      _ => verificationData);
         }
 
         [Fact]
         public async Task GivenFormHasSpam_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult()
         {
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.NoError;
+
             var service = GetDefaultService();
             var form = GetDefaultForm();
             var altcha = _apiSimulation.GenerateSpamFiltered(form,
@@ -289,12 +375,18 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.True(result.IsValid);
             Assert.False(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(string.Empty, result.ValidationError.Message);
         }
 
         [Fact]
         public async Task
             GivenFormHasSpamAccordingToCustomThreshold_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult()
         {
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.NoError;
+
             var service = GetServiceWithThreshold(0.5);
             var form = GetDefaultForm();
             var altcha = _apiSimulation.GenerateSpamFiltered(form,
@@ -307,6 +399,9 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.True(result.IsValid);
             Assert.False(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(string.Empty, result.ValidationError.Message);
         }
 
         [Theory]
@@ -317,6 +412,9 @@ namespace Ixnas.AltchaNet.Tests
             GivenFormHasEmptyButMatchingField_WhenValidateSpamFilteredFormCalled_ReturnsPositiveResult(
                 string emptyField)
         {
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.NoError;
+
             var service = GetDefaultService();
             var form = GetDefaultForm();
             form.Something = emptyField;
@@ -326,28 +424,34 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.True(result.IsValid);
             Assert.True(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(string.Empty, result.ValidationError.Message);
         }
 
-        [Theory]
-        [InlineData("Before", "After")]
-        [InlineData("Before", null)]
-        [InlineData(null, "After")]
+        [Fact]
         public async Task
-            GivenFormIsHasAlteredFieldValue_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult(
-                string before,
-                string after)
+            GivenFormIsHasAlteredFieldValue_WhenValidateSpamFilteredFormCalled_ReturnsNegativeResult()
         {
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.FormFieldValuesDontMatch;
+            const string expectedErrorString =
+                "This form's field values do not match what was verified by ALTCHA API's spam filter.";
+
             var service = GetDefaultService();
             var form = GetDefaultForm();
-            form.Something = before;
+            form.Something = "Before";
             var altcha = GenerateDefaultSpamFiltered(form);
 
             form.Altcha = altcha;
-            form.Something = after;
+            form.Something = "After";
             var result = await service.ValidateSpamFilteredForm(form);
 
             Assert.False(result.IsValid);
             Assert.False(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(expectedErrorString, result.ValidationError.Message);
         }
 
         [Theory]
@@ -359,6 +463,11 @@ namespace Ixnas.AltchaNet.Tests
             string before,
             string after)
         {
+            const AltchaSpamFilteredValidationErrorCode expectedErrorCode =
+                AltchaSpamFilteredValidationErrorCode.FormFieldsDontMatch;
+            const string expectedErrorString =
+                "This form's fields do not match what was verified by ALTCHA API's spam filter.";
+
             var service = GetDefaultService();
             var form1 = GetDefaultForm();
             form1.Something = before;
@@ -374,9 +483,14 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.False(result.IsValid);
             Assert.False(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(expectedErrorString, result.ValidationError.Message);
         }
 
-        private async Task TestMalformedAltcha(Func<string, string> malformedSignatureFn = null,
+        private async Task TestMalformedAltcha(AltchaSpamFilteredValidationErrorCode expectedErrorCode,
+                                               string expectedErrorMessage,
+                                               Func<string, string> malformedSignatureFn = null,
                                                Func<string> replaceAlgorithmFn = null,
                                                Func<string, string> malformVerificationDataFn = null)
         {
@@ -395,6 +509,9 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.False(result.IsValid);
             Assert.False(result.PassedSpamFilter);
+
+            Assert.Equal(expectedErrorCode, result.ValidationError.Code);
+            Assert.Equal(expectedErrorMessage, result.ValidationError.Message);
         }
 
         private static TestForm GetDefaultForm()

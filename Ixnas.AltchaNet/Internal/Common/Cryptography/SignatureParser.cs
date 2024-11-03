@@ -14,33 +14,16 @@ namespace Ixnas.AltchaNet.Internal.Common.Cryptography
             _cryptoAlgorithm = cryptoAlgorithm;
         }
 
-        public bool TryParse(string hexString, out Signature signature)
-        {
-            var result = Parse(hexString);
-            if (!result.Success)
-            {
-                signature = null;
-                return false;
-            }
-
-            signature = result.Value;
-            return true;
-        }
-
-        private Result<Signature> Parse(string hexString)
+        public Result<Signature> Parse(string hexString)
         {
             if (hexString == null)
-                return new Result<Signature>();
+                return Result<Signature>.Fail(ErrorCode.SignatureIsInvalidHexString);
             var signatureBytesResult = ByteConverter.GetByteArrayFromHexString(hexString);
             if (!signatureBytesResult.Success)
-                return new Result<Signature>();
-            return new Result<Signature>
-            {
-                Success = true,
-                Value = new Signature(signatureBytesResult.Value,
-                                      _payloadConverter,
-                                      _cryptoAlgorithm)
-            };
+                return Result<Signature>.Fail(ErrorCode.SignatureIsInvalidHexString);
+            return Result<Signature>.Ok(new Signature(signatureBytesResult.Value,
+                                                      _payloadConverter,
+                                                      _cryptoAlgorithm));
         }
     }
 }

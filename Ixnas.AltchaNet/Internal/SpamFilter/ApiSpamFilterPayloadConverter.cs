@@ -15,14 +15,10 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
         public Result<byte[]> Convert(string payload)
         {
             if (payload == null)
-                return new Result<byte[]>();
+                return Result<byte[]>.Fail();
             var challengeBytes = ByteConverter.GetByteArrayFromUtf8String(payload);
             var challengeHash = _cryptoAlgorithm.Hash(challengeBytes);
-            return new Result<byte[]>
-            {
-                Success = true,
-                Value = challengeHash
-            };
+            return Result<byte[]>.Ok(challengeHash);
         }
     }
 }

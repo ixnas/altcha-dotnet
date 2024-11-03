@@ -43,6 +43,9 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.True(result.Succeeded);
             Assert.True(validationResult.IsValid);
+
+            Assert.Equal(AltchaValidationErrorCode.NoError, validationResult.ValidationError.Code);
+            Assert.Equal(string.Empty, validationResult.ValidationError.Message);
         }
 
         [Theory]
@@ -87,6 +90,9 @@ namespace Ixnas.AltchaNet.Tests
         public async Task GivenChallengedIsSolvedAfterExpiry_WhenCallingValidate_ReturnsNegativeResult(
             CommonServiceType commonServiceType)
         {
+            const AltchaValidationErrorCode expectedErrorCode = AltchaValidationErrorCode.ChallengeExpired;
+            const string expectedErrorString = "Challenge expired.";
+
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetServiceWithExpiry(1, null, _clock);
             var challenge = service.Generate();
@@ -97,6 +103,8 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.True(result.Succeeded);
             Assert.False(validationResult.IsValid);
+            Assert.Equal(expectedErrorCode, validationResult.ValidationError.Code);
+            Assert.Equal(expectedErrorString, validationResult.ValidationError.Message);
         }
 
         [Theory]
@@ -106,6 +114,9 @@ namespace Ixnas.AltchaNet.Tests
             GivenChallengeIsSolvedWithOldService_WhenCallingValidateOnNewService_RespectsOldExpiry(
                 CommonServiceType commonServiceType)
         {
+            const AltchaValidationErrorCode expectedErrorCode = AltchaValidationErrorCode.ChallengeExpired;
+            const string expectedErrorString = "Challenge expired.";
+
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetServiceWithExpiry(1, null, _clock);
             var challenge = service.Generate();
@@ -115,7 +126,10 @@ namespace Ixnas.AltchaNet.Tests
             var newService = TestUtils.ServiceFactories[commonServiceType]
                                       .GetServiceWithExpiry(30, null, _clock);
             var validationResult = await newService.Validate(result.AltchaJson);
+
             Assert.False(validationResult.IsValid);
+            Assert.Equal(expectedErrorCode, validationResult.ValidationError.Code);
+            Assert.Equal(expectedErrorString, validationResult.ValidationError.Message);
         }
 
         [Theory]
@@ -146,6 +160,9 @@ namespace Ixnas.AltchaNet.Tests
         public async Task GivenChallengeIsSolved_WhenCallingValidateTwice_ReturnsNegativeResult(
             CommonServiceType commonServiceType)
         {
+            const AltchaValidationErrorCode expectedErrorCode = AltchaValidationErrorCode.PreviouslyVerified;
+            const string expectedErrorString = "Challenge has been verified before.";
+
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
             var challenge = service.Generate();
@@ -156,6 +173,9 @@ namespace Ixnas.AltchaNet.Tests
 
             Assert.True(result.Succeeded);
             Assert.False(validationResult.IsValid);
+
+            Assert.Equal(expectedErrorCode, validationResult.ValidationError.Code);
+            Assert.Equal(expectedErrorString, validationResult.ValidationError.Message);
         }
 
         [Theory]
@@ -172,7 +192,27 @@ namespace Ixnas.AltchaNet.Tests
             await TestMalformedSimulation(service,
                                           signature => prefix + signature.Substring(1),
                                           null,
-                                          null);
+                                          null,
+                                          null,
+                                          AltchaValidationErrorCode.SignatureIsInvalidHexString,
+                                          "Signature is not a valid hex string.");
+        }
+
+        [Theory]
+        [InlineData(CommonServiceType.Api)]
+        [InlineData(CommonServiceType.Default)]
+        public async Task GivenWrongSignature_WhenCallingValidate_ReturnsNegativeResult(
+            CommonServiceType commonServiceType)
+        {
+            var service = TestUtils.ServiceFactories[commonServiceType]
+                                   .GetDefaultService();
+            await TestMalformedSimulation(service,
+                                          signature => "aaaaaa" + signature.Substring(6),
+                                          null,
+                                          null,
+                                          null,
+                                          AltchaValidationErrorCode.PayloadDoesNotMatchSignature,
+                                          "Payload does not match signature.");
         }
 
         [Theory]
@@ -189,7 +229,10 @@ namespace Ixnas.AltchaNet.Tests
             await TestMalformedSimulation(service,
                                           null,
                                           challenge => prefix + challenge.Substring(1),
-                                          null);
+                                          null,
+                                          null,
+                                          AltchaValidationErrorCode.ChallengeDoesNotMatch,
+                                          "Calculated salt and secret number combination does not match the challenge.");
         }
 
         [Theory]
@@ -203,7 +246,27 @@ namespace Ixnas.AltchaNet.Tests
             await TestMalformedSimulation(service,
                                           null,
                                           null,
-                                          () => -1);
+                                          () => -1,
+                                          null,
+                                          AltchaValidationErrorCode.ChallengeDoesNotMatch,
+                                          "Calculated salt and secret number combination does not match the challenge.");
+        }
+
+        [Theory]
+        [InlineData(CommonServiceType.Default)]
+        [InlineData(CommonServiceType.Api)]
+        public async Task GivenWrongAlgorithm_WhenCallingValidate_ReturnsNegativeResult(
+            CommonServiceType commonServiceType)
+        {
+            var service = TestUtils.ServiceFactories[commonServiceType]
+                                   .GetDefaultService();
+            await TestMalformedSimulation(service,
+                                          null,
+                                          null,
+                                          null,
+                                          () => "SHA-512",
+                                          AltchaValidationErrorCode.AlgorithmDoesNotMatch,
+                                          "Algorithm does not match the algorithm that was configured.");
         }
 
         [Theory]
@@ -221,6 +284,8 @@ namespace Ixnas.AltchaNet.Tests
             CommonServiceType commonServiceType,
             string malformedSalt)
         {
+            const string expectedMessage = "Salt does not have the expected format.";
+            const AltchaValidationErrorCode expectedErrorCode = AltchaValidationErrorCode.InvalidSalt;
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
             var challenge = service.Generate();
@@ -232,21 +297,45 @@ namespace Ixnas.AltchaNet.Tests
             var run = await service.Validate(result.AltchaJson);
 
             Assert.False(run.IsValid);
+            Assert.Equal(expectedErrorCode, run.ValidationError.Code);
+            Assert.Equal(expectedMessage, run.ValidationError.Message);
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Default, "weirojoij")]
-        [InlineData(CommonServiceType.Default, "eyJzb21ldGhpbmciOiJlbHNlIiwiaXNudCI6InJpZ2h0In0=")]
-        [InlineData(CommonServiceType.Api, "weirojoij")]
-        [InlineData(CommonServiceType.Api, "eyJzb21ldGhpbmciOiJlbHNlIiwiaXNudCI6InJpZ2h0In0=")]
+        [InlineData(CommonServiceType.Default)]
+        [InlineData(CommonServiceType.Api)]
         public async Task GivenMalformedAltchaBase64_WhenCallingValidate_ReturnsNegativeResult(
-            CommonServiceType commonServiceType,
-            string malformedAltcha64)
+            CommonServiceType commonServiceType)
         {
+            const string malformedAltcha64 = "weirojoij";
+            const string expectedMessage = "Challenge is not a valid base64 string.";
+            const AltchaValidationErrorCode expectedErrorCode =
+                AltchaValidationErrorCode.ChallengeIsInvalidBase64;
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
             var run = await service.Validate(malformedAltcha64);
             Assert.False(run.IsValid);
+            Assert.Equal(expectedErrorCode, run.ValidationError.Code);
+            Assert.Equal(expectedMessage, run.ValidationError.Message);
+        }
+
+        [Theory]
+        [InlineData(CommonServiceType.Default)]
+        [InlineData(CommonServiceType.Api)]
+        public async Task GivenMalformedAltchaBase64Json_WhenCallingValidate_ReturnsNegativeResult(
+            CommonServiceType commonServiceType)
+        {
+            const string malformedAltcha64 = "bm90IGEganNvbiBzdHJpbmc=";
+            const string expectedMessage =
+                "Challenge could be base64-decoded, but could not be parsed as JSON.";
+            const AltchaValidationErrorCode expectedErrorCode =
+                AltchaValidationErrorCode.ChallengeIsInvalidJson;
+            var service = TestUtils.ServiceFactories[commonServiceType]
+                                   .GetDefaultService();
+            var run = await service.Validate(malformedAltcha64);
+            Assert.False(run.IsValid);
+            Assert.Equal(expectedErrorCode, run.ValidationError.Code);
+            Assert.Equal(expectedMessage, run.ValidationError.Message);
         }
 
         [Theory]
@@ -261,6 +350,7 @@ namespace Ixnas.AltchaNet.Tests
             var challenge = service.Generate();
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
+
             var run1 = await service.Validate(result.AltchaJson);
             Assert.True(run1.IsValid);
 
@@ -276,7 +366,10 @@ namespace Ixnas.AltchaNet.Tests
         private async static Task TestMalformedSimulation(CommonService service,
                                                           Func<string, string> malformSignatureFn,
                                                           Func<string, string> malformChallengeFn,
-                                                          Func<int> replaceSecretNumberFn)
+                                                          Func<int> replaceSecretNumberFn,
+                                                          Func<string> replaceAlgorithmFn,
+                                                          AltchaValidationErrorCode expectedErrorCode,
+                                                          string expectedErrorMessage)
         {
             var challenge = service.Generate();
             var simulation = new AltchaFrontEndSimulation();
@@ -284,11 +377,14 @@ namespace Ixnas.AltchaNet.Tests
                                         malformSignatureFn,
                                         malformChallengeFn,
                                         null,
-                                        replaceSecretNumberFn);
+                                        replaceSecretNumberFn,
+                                        replaceAlgorithmFn);
             var validationResult = await service.Validate(result.AltchaJson);
 
             Assert.True(result.Succeeded);
             Assert.False(validationResult.IsValid);
+            Assert.Equal(expectedErrorCode, validationResult.ValidationError.Code);
+            Assert.Equal(expectedErrorMessage, validationResult.ValidationError.Message);
         }
     }
 }

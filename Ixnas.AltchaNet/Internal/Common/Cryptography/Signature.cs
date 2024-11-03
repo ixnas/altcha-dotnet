@@ -18,16 +18,21 @@ namespace Ixnas.AltchaNet.Internal.Common.Cryptography
             _cryptoAlgorithm = cryptoAlgorithm;
         }
 
-        public bool PayloadIsValid(string payload)
+        public Result PayloadIsValid(string payload)
         {
+            var error = Result.Fail(ErrorCode.PayloadDoesNotMatchSignature);
+
             var payloadBytesResult = _payloadConverter.Convert(payload);
             if (!payloadBytesResult.Success)
-                return false;
+                return error;
 
             var payloadBytes = payloadBytesResult.Value;
             var calculatedSignature = _cryptoAlgorithm.Sign(payloadBytes);
 
-            return _signatureBytes.SequenceEqual(calculatedSignature);
+            if (!_signatureBytes.SequenceEqual(calculatedSignature))
+                return error;
+
+            return Result.Ok();
         }
 
         public string ToHexString()
