@@ -33,7 +33,7 @@ namespace Ixnas.AltchaNet.Tests.Simulations
                                                   Func<string, string> malformSaltFn = null,
                                                   Func<int> replaceSecretNumberFn = null,
                                                   Func<string> replaceAlgorithmFn = null)
-#pragma warning restore CA1822)
+#pragma warning restore CA1822
         {
             using (var sha = SHA256.Create())
             {

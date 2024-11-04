@@ -86,10 +86,7 @@ namespace Ixnas.AltchaNet.Tests.Simulations
                                                      && property.Name != altchaPropertyName);
             var propertyDictionary = formProperties.Select(property => new
                                                    {
-                                                       Key = property.Name[0]
-                                                                     .ToString()
-                                                                     .ToLower()
-                                                             + property.Name.Substring(1),
+                                                       Key = property.Name,
                                                        Value = (property.GetValue(form) as string)?.Trim()
                                                    })
                                                    .Where(property => !string.IsNullOrWhiteSpace(

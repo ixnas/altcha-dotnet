@@ -139,10 +139,7 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
                                           property.Name != altchaPropertyName)
                                .Select(property => new Form.FormField
                                {
-                                   Key = property.Name[0]
-                                                 .ToString()
-                                                 .ToLower()
-                                         + property.Name.Substring(1),
+                                   Key = property.Name,
                                    Value = (property.GetValue(form) as string)?.Trim()
                                })
                                .Where(property => !string.IsNullOrWhiteSpace(property.Value))
@@ -229,7 +226,7 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             var isValid = _clock.UtcNow < timestamp;
             if (!isValid)
                 return Result<(SpamFilteredAltcha, SpamFilterVerificationData)>.Fail(ErrorCode
-                    .FormSubmissionExpired);
+                             .FormSubmissionExpired);
 
             return Result<(SpamFilteredAltcha, SpamFilterVerificationData)>.Ok((altcha, verificationData));
         }
@@ -248,18 +245,18 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             if (!fieldsToHash.Select(field => field.Key)
                              .SequenceEqual(fieldNames))
                 return Result<(SpamFilteredAltcha, SpamFilterVerificationData)>.Fail(ErrorCode
-                    .FormFieldsDontMatch);
+                             .FormFieldsDontMatch);
 
             var combinedFields = string.Join("\n", fieldsToHash.Select(field => field.Value));
             var calculatedHash =
                 ByteConverter.GetHexStringFromBytes(_cryptoAlgorithm.Hash(ByteConverter
-                                                        .GetByteArrayFromUtf8String(combinedFields)));
+                                                                 .GetByteArrayFromUtf8String(combinedFields)));
 
             var fieldsHash = verificationData.FieldHash;
             var fieldValuesMatch = calculatedHash == fieldsHash;
             if (!fieldValuesMatch)
                 return Result<(SpamFilteredAltcha, SpamFilterVerificationData)>.Fail(ErrorCode
-                    .FormFieldValuesDontMatch);
+                             .FormFieldValuesDontMatch);
             return Result<(SpamFilteredAltcha, SpamFilterVerificationData)>.Ok((altcha, verificationData));
         }
 

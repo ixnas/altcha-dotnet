@@ -252,7 +252,6 @@ The `ValidationError` property contains more details on why the validation faile
 The result's `PassedSpamFilter` property tells you whether the form data successfully passed through the spam filter.
 You might want to keep the form submission and mark it as spam in your application for manual approval.
 
-
 ## Solving challenges
 
 ### Set up
