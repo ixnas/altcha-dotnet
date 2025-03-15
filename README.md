@@ -149,7 +149,7 @@ JSON object.
 To validate a response:
 
 ```csharp
-var validationResult = await altchaService.Validate(altchaBase64);
+var validationResult = await altchaService.Validate(altcha);
 if (!validationResult.IsValid)
 {
     _logger.LogInformation(validationResult.ValidationError.Message);
@@ -157,8 +157,8 @@ if (!validationResult.IsValid)
 }
 ```
 
-The `altchaBase64` parameter represents the raw value from the `altcha` field in a submitted form, so you don't need to
-convert anything.
+The `altcha` parameter can either be a base64-encoded JSON string (like the raw value of the `altcha` field in a
+submitted form), or an already decoded and deserialized `AltchaResponse` object.
 
 ## Verifying challenges from ALTCHA's API
 
@@ -198,7 +198,7 @@ You can even use the same instance if you like.
 To validate a regular response:
 
 ```csharp
-var validationResult = await altchaApiService.Validate(altchaBase64);
+var validationResult = await altchaApiService.Validate(altcha);
 if (!validationResult.IsValid)
 {
     _logger.LogInformation(validationResult.ValidationError.Message);

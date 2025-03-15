@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Ixnas.AltchaNet.Tests.Abstractions;
 
 namespace Ixnas.AltchaNet.Tests.Simulations
 {
@@ -12,18 +13,8 @@ namespace Ixnas.AltchaNet.Tests.Simulations
         internal class AltchaFrontEndSimulationResult
         {
             public bool Succeeded { get; set; }
-            public string AltchaJson { get; set; }
+            public AltchaResponseSet Altcha { get; set; }
             public int Number { get; set; }
-        }
-
-        [Serializable]
-        private class Req
-        {
-            public string Challenge { get; set; }
-            public int Number { get; set; }
-            public string Salt { get; set; }
-            public string Signature { get; set; }
-            public string Algorithm { get; set; }
         }
 
 #pragma warning disable CA1822
@@ -49,27 +40,33 @@ namespace Ixnas.AltchaNet.Tests.Simulations
                     if (!succeeded)
                         continue;
 
-                    var altchaJson = GetAtchaJsonBase64(altchaChallenge.Challenge,
-                                                        number,
-                                                        altchaChallenge.Salt,
-                                                        altchaChallenge.Signature,
-                                                        malformSignatureFn,
-                                                        malformChallengeFn,
-                                                        malformSaltFn,
-                                                        replaceSecretNumberFn,
-                                                        replaceAlgorithmFn);
+                    var altchaResponse = GetAtchaResponse(altchaChallenge.Challenge,
+                                                          number,
+                                                          altchaChallenge.Salt,
+                                                          altchaChallenge.Signature,
+                                                          malformSignatureFn,
+                                                          malformChallengeFn,
+                                                          malformSaltFn,
+                                                          replaceSecretNumberFn,
+                                                          replaceAlgorithmFn);
+                    var altchaJson =
+                        JsonSerializer.SerializeToUtf8Bytes(altchaResponse, TestUtils.JsonSerializerOptions);
+                    var altchaJson64 = Convert.ToBase64String(altchaJson);
                     return new AltchaFrontEndSimulationResult
                     {
                         Succeeded = true,
-                        AltchaJson = altchaJson,
+                        Altcha = new AltchaResponseSet
+                        {
+                            Base64 = altchaJson64,
+                            Object = altchaResponse
+                        },
                         Number = number
                     };
                 }
 
                 return new AltchaFrontEndSimulationResult
                 {
-                    Succeeded = false,
-                    AltchaJson = string.Empty
+                    Succeeded = false
                 };
             }
         }
@@ -89,15 +86,15 @@ namespace Ixnas.AltchaNet.Tests.Simulations
             return bytes.ToArray();
         }
 
-        private static string GetAtchaJsonBase64(string challenge,
-                                                 int number,
-                                                 string salt,
-                                                 string signature,
-                                                 Func<string, string> malformSignatureFn,
-                                                 Func<string, string> malformChallengeFn,
-                                                 Func<string, string> malformSaltFn,
-                                                 Func<int> replaceSecretNumberFn,
-                                                 Func<string> replaceAlgorithmFn)
+        private static AltchaResponse GetAtchaResponse(string challenge,
+                                                       int number,
+                                                       string salt,
+                                                       string signature,
+                                                       Func<string, string> malformSignatureFn,
+                                                       Func<string, string> malformChallengeFn,
+                                                       Func<string, string> malformSaltFn,
+                                                       Func<int> replaceSecretNumberFn,
+                                                       Func<string> replaceAlgorithmFn)
         {
             var algorithm = "SHA-256";
             if (malformSignatureFn != null)
@@ -115,7 +112,7 @@ namespace Ixnas.AltchaNet.Tests.Simulations
             if (replaceAlgorithmFn != null)
                 algorithm = replaceAlgorithmFn();
 
-            var req = new Req
+            return new AltchaResponse
             {
                 Challenge = challenge,
                 Number = number,
@@ -123,8 +120,6 @@ namespace Ixnas.AltchaNet.Tests.Simulations
                 Signature = signature,
                 Algorithm = algorithm
             };
-            var json = JsonSerializer.SerializeToUtf8Bytes(req, TestUtils.JsonSerializerOptions);
-            return Convert.ToBase64String(json);
         }
     }
 }

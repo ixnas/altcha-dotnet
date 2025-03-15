@@ -32,6 +32,16 @@ namespace Ixnas.AltchaNet
         }
 
         /// <summary>
+        ///     Validates a solved ALTCHA challenge response.
+        /// </summary>
+        /// <param name="altchaResponse">A (deserialized) ALTCHA response.</param>
+        /// <returns>A result object representing the result of the validation.</returns>
+        public async Task<AltchaValidationResult> Validate(AltchaResponse altchaResponse)
+        {
+            return await _responseValidator.Validate(altchaResponse);
+        }
+
+        /// <summary>
         ///     Validates a form that was processed through the ALTCHA project's spam filter API.
         /// </summary>
         /// <param name="form">

@@ -77,8 +77,7 @@ namespace Ixnas.AltchaNet
                                                        challengeStringGenerator);
             var signatureParser =
                 new SignatureParser(payloadToBytesConverter, cryptoAlgorithm);
-            var altchaParser = new AltchaResponseParser(serializer,
-                                                        challengeFactory,
+            var altchaParser = new AltchaResponseParser(challengeFactory,
                                                         signatureParser);
 
             var challengeGenerator =
@@ -88,7 +87,7 @@ namespace Ixnas.AltchaNet
                                        secretNumberGenerator,
                                        signatureGenerator);
 
-            var responseValidator = new ResponseValidator(storeFactory, altchaParser);
+            var responseValidator = new ResponseValidator(storeFactory, altchaParser, serializer);
 
             return new AltchaService(challengeGenerator, responseValidator);
         }

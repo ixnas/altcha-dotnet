@@ -5,7 +5,6 @@ using Ixnas.AltchaNet.Internal.Common.Converters;
 using Ixnas.AltchaNet.Internal.Common.Cryptography;
 using Ixnas.AltchaNet.Internal.Common.Serialization;
 using Ixnas.AltchaNet.Internal.Common.Utilities;
-using Ixnas.AltchaNet.Internal.ProofOfWork.Common;
 using Ixnas.AltchaNet.Internal.Solving;
 
 namespace Ixnas.AltchaNet
@@ -118,7 +117,7 @@ namespace Ixnas.AltchaNet
 
         private string GenerateAltchaResponse(AltchaChallenge altchaChallenge, int number)
         {
-            var response = new SerializedAltchaResponse
+            var response = new AltchaResponse
             {
                 Challenge = altchaChallenge.Challenge,
                 Number = number,

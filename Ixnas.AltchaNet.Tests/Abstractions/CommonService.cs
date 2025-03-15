@@ -11,6 +11,12 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
         Api
     }
 
+    public enum CommonServiceValidationMethod
+    {
+        Base64,
+        Object
+    }
+
     internal interface CommonServiceFactory
     {
         CommonService GetDefaultService();
@@ -25,7 +31,9 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
     internal interface CommonService
     {
         AltchaChallenge Generate();
-        Task<AltchaValidationResult> Validate(string altcha64);
+
+        Task<AltchaValidationResult> Validate(AltchaResponseSet altcha,
+                                              CommonServiceValidationMethod commonServiceValidationMethod);
     }
 
     internal class CommonDefaultServiceFactory : CommonServiceFactory
@@ -141,9 +149,19 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
             return _simulation.Generate(_expiryInSeconds);
         }
 
-        public Task<AltchaValidationResult> Validate(string altcha64)
+        public Task<AltchaValidationResult> Validate(AltchaResponseSet altcha,
+                                                     CommonServiceValidationMethod
+                                                         commonServiceValidationMethod)
         {
-            return _service.Validate(altcha64);
+            switch (commonServiceValidationMethod)
+            {
+                case CommonServiceValidationMethod.Base64:
+                    return _service.Validate(altcha.Base64);
+                case CommonServiceValidationMethod.Object:
+                    return _service.Validate(altcha.Object);
+                default:
+                    throw new InvalidOperationException();
+            }
         }
     }
 
@@ -161,9 +179,19 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
             return _service.Generate();
         }
 
-        public Task<AltchaValidationResult> Validate(string altcha64)
+        public Task<AltchaValidationResult> Validate(AltchaResponseSet altcha,
+                                                     CommonServiceValidationMethod
+                                                         commonServiceValidationMethod)
         {
-            return _service.Validate(altcha64);
+            switch (commonServiceValidationMethod)
+            {
+                case CommonServiceValidationMethod.Base64:
+                    return _service.Validate(altcha.Base64);
+                case CommonServiceValidationMethod.Object:
+                    return _service.Validate(altcha.Object);
+                default:
+                    throw new InvalidOperationException();
+            }
         }
     }
 }

@@ -70,11 +70,11 @@ namespace Ixnas.AltchaNet
             var spamFilterValidatorSignatureParser =
                 new SignatureParser(spamFilterValidatorPayloadConverter,
                                     cryptoAlgorithm);
-            var responseValidatorAltchaParser = new AltchaResponseParser(serializer,
-                                                                             challengeFactory,
+            var responseValidatorAltchaParser = new AltchaResponseParser(challengeFactory,
                                                                              responseValidatorSignatureParser);
             var responseValidator = new ResponseValidator(storeFactory,
-                                                          responseValidatorAltchaParser);
+                                                          responseValidatorAltchaParser,
+                                                          serializer);
             var spamFilterValidator =
                 new SpamFilterValidator(serializer,
                                         cryptoAlgorithm,

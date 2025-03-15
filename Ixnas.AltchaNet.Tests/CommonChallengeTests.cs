@@ -25,21 +25,45 @@ namespace Ixnas.AltchaNet.Tests
         {
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
-            await Assert.ThrowsAsync<ArgumentNullException>(() => service.Validate(altcha));
+            var responseSet = new AltchaResponseSet
+            {
+                Base64 = altcha
+            };
+            await Assert.ThrowsAsync<ArgumentNullException>(() => service.Validate(responseSet,
+                                                                CommonServiceValidationMethod.Base64));
         }
 
         [Theory]
         [InlineData(CommonServiceType.Default)]
         [InlineData(CommonServiceType.Api)]
-        public async Task GivenChallengeIsSolved_WhenCallingValidate_ReturnsPositiveResult(
+        public async Task GivenChallengeObjectIsNull_WhenValidateCalled_ThenThrowException(
             CommonServiceType commonServiceType)
+        {
+            var service = TestUtils.ServiceFactories[commonServiceType]
+                                   .GetDefaultService();
+            var responseSet = new AltchaResponseSet
+            {
+                Object = null
+            };
+            await Assert.ThrowsAsync<ArgumentNullException>(() => service.Validate(responseSet,
+                                                                CommonServiceValidationMethod.Object));
+        }
+
+        [Theory]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
+        public async Task GivenChallengeIsSolved_WhenCallingValidate_ReturnsPositiveResult(
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
         {
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
             var challenge = service.Generate();
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
-            var validationResult = await service.Validate(result.AltchaJson);
+            var validationResult = await service.Validate(result.Altcha, validationMethod);
 
             Assert.True(result.Succeeded);
             Assert.True(validationResult.IsValid);
@@ -49,10 +73,13 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Default)]
-        [InlineData(CommonServiceType.Api)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
         public async Task GivenStoreFactoryProvided_WhenCallingValidate_InstantiatesStore(
-            CommonServiceType commonServiceType)
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
         {
             var storeWasInstantiated = false;
             var service = TestUtils.ServiceFactories[commonServiceType]
@@ -66,29 +93,36 @@ namespace Ixnas.AltchaNet.Tests
             var result = simulation.Run(challenge);
 
             Assert.False(storeWasInstantiated);
-            await service.Validate(result.AltchaJson);
+            await service.Validate(result.Altcha, validationMethod);
             Assert.True(storeWasInstantiated);
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Default)]
-        [InlineData(CommonServiceType.Api)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
         public async Task GivenStoreFactoryReturnsNull_WhenCallingValidate_ThrowsMissingStoreException(
-            CommonServiceType commonServiceType)
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
         {
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetServiceWithStoreFactory(() => null);
             var challenge = service.Generate();
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
-            await Assert.ThrowsAsync<MissingStoreException>(() => service.Validate(result.AltchaJson));
+            await Assert.ThrowsAsync<MissingStoreException>(() => service.Validate(result.Altcha,
+                                                                validationMethod));
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Default)]
-        [InlineData(CommonServiceType.Api)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
         public async Task GivenChallengedIsSolvedAfterExpiry_WhenCallingValidate_ReturnsNegativeResult(
-            CommonServiceType commonServiceType)
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
         {
             const AltchaValidationErrorCode expectedErrorCode = AltchaValidationErrorCode.ChallengeExpired;
             const string expectedErrorString = "Challenge expired.";
@@ -99,7 +133,7 @@ namespace Ixnas.AltchaNet.Tests
             _clock.SetOffsetInSeconds(2);
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
-            var validationResult = await service.Validate(result.AltchaJson);
+            var validationResult = await service.Validate(result.Altcha, validationMethod);
 
             Assert.True(result.Succeeded);
             Assert.False(validationResult.IsValid);
@@ -108,11 +142,14 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Default)]
-        [InlineData(CommonServiceType.Api)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
         public async Task
             GivenChallengeIsSolvedWithOldService_WhenCallingValidateOnNewService_RespectsOldExpiry(
-                CommonServiceType commonServiceType)
+                CommonServiceType commonServiceType,
+                CommonServiceValidationMethod validationMethod)
         {
             const AltchaValidationErrorCode expectedErrorCode = AltchaValidationErrorCode.ChallengeExpired;
             const string expectedErrorString = "Challenge expired.";
@@ -125,7 +162,7 @@ namespace Ixnas.AltchaNet.Tests
             var result = simulation.Run(challenge);
             var newService = TestUtils.ServiceFactories[commonServiceType]
                                       .GetServiceWithExpiry(30, null, _clock);
-            var validationResult = await newService.Validate(result.AltchaJson);
+            var validationResult = await newService.Validate(result.Altcha, validationMethod);
 
             Assert.False(validationResult.IsValid);
             Assert.Equal(expectedErrorCode, validationResult.ValidationError.Code);
@@ -133,10 +170,13 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Default)]
-        [InlineData(CommonServiceType.Api)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
         public async Task GivenChallengedHasExpiry_WhenCallingValidate_StoresMatchingExpiry(
-            CommonServiceType commonServiceType)
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
         {
             var store = new AltchaChallengeStoreFake();
             var service = TestUtils.ServiceFactories[commonServiceType]
@@ -148,17 +188,20 @@ namespace Ixnas.AltchaNet.Tests
 
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
-            await service.Validate(result.AltchaJson);
+            await service.Validate(result.Altcha, validationMethod);
 
             var expiry = store.Stored.Value.Expiry;
             Assert.InRange(expiry, marginStart, marginEnd);
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Default)]
-        [InlineData(CommonServiceType.Api)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
         public async Task GivenChallengeIsSolved_WhenCallingValidateTwice_ReturnsNegativeResult(
-            CommonServiceType commonServiceType)
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
         {
             const AltchaValidationErrorCode expectedErrorCode = AltchaValidationErrorCode.PreviouslyVerified;
             const string expectedErrorString = "Challenge has been verified before.";
@@ -168,8 +211,8 @@ namespace Ixnas.AltchaNet.Tests
             var challenge = service.Generate();
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
-            await service.Validate(result.AltchaJson);
-            var validationResult = await service.Validate(result.AltchaJson);
+            await service.Validate(result.Altcha, validationMethod);
+            var validationResult = await service.Validate(result.Altcha, validationMethod);
 
             Assert.True(result.Succeeded);
             Assert.False(validationResult.IsValid);
@@ -179,13 +222,18 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
-        [InlineData("", CommonServiceType.Api)]
-        [InlineData("", CommonServiceType.Default)]
-        [InlineData("x", CommonServiceType.Api)]
-        [InlineData("x", CommonServiceType.Default)]
+        [InlineData("", CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData("", CommonServiceType.Api, CommonServiceValidationMethod.Object)]
+        [InlineData("", CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData("", CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData("x", CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData("x", CommonServiceType.Api, CommonServiceValidationMethod.Object)]
+        [InlineData("x", CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData("x", CommonServiceType.Default, CommonServiceValidationMethod.Object)]
         public async Task GivenMalformedSignature_WhenCallingValidate_ReturnsNegativeResult(
             string prefix,
-            CommonServiceType commonServiceType)
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
         {
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
@@ -195,14 +243,18 @@ namespace Ixnas.AltchaNet.Tests
                                           null,
                                           null,
                                           AltchaValidationErrorCode.SignatureIsInvalidHexString,
-                                          "Signature is not a valid hex string.");
+                                          "Signature is not a valid hex string.",
+                                          validationMethod);
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Api)]
-        [InlineData(CommonServiceType.Default)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
         public async Task GivenWrongSignature_WhenCallingValidate_ReturnsNegativeResult(
-            CommonServiceType commonServiceType)
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
         {
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
@@ -212,17 +264,23 @@ namespace Ixnas.AltchaNet.Tests
                                           null,
                                           null,
                                           AltchaValidationErrorCode.PayloadDoesNotMatchSignature,
-                                          "Payload does not match signature.");
+                                          "Payload does not match signature.",
+                                          validationMethod);
         }
 
         [Theory]
-        [InlineData("", CommonServiceType.Api)]
-        [InlineData("", CommonServiceType.Default)]
-        [InlineData("x", CommonServiceType.Api)]
-        [InlineData("x", CommonServiceType.Default)]
+        [InlineData("", CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData("", CommonServiceType.Api, CommonServiceValidationMethod.Object)]
+        [InlineData("", CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData("", CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData("x", CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData("x", CommonServiceType.Api, CommonServiceValidationMethod.Object)]
+        [InlineData("x", CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData("x", CommonServiceType.Default, CommonServiceValidationMethod.Object)]
         public async Task GivenMalformedChallenge_WhenCallingValidate_ReturnsNegativeResult(
             string prefix,
-            CommonServiceType commonServiceType)
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
         {
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
@@ -232,14 +290,18 @@ namespace Ixnas.AltchaNet.Tests
                                           null,
                                           null,
                                           AltchaValidationErrorCode.ChallengeDoesNotMatch,
-                                          "Calculated salt and secret number combination does not match the challenge.");
+                                          "Calculated salt and secret number combination does not match the challenge.",
+                                          validationMethod);
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Default)]
-        [InlineData(CommonServiceType.Api)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
         public async Task GivenWrongSecretNumber_WhenCallingValidate_ReturnsNegativeResult(
-            CommonServiceType commonServiceType)
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
         {
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
@@ -249,14 +311,18 @@ namespace Ixnas.AltchaNet.Tests
                                           () => -1,
                                           null,
                                           AltchaValidationErrorCode.ChallengeDoesNotMatch,
-                                          "Calculated salt and secret number combination does not match the challenge.");
+                                          "Calculated salt and secret number combination does not match the challenge.",
+                                          validationMethod);
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Default)]
-        [InlineData(CommonServiceType.Api)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
         public async Task GivenWrongAlgorithm_WhenCallingValidate_ReturnsNegativeResult(
-            CommonServiceType commonServiceType)
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
         {
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
@@ -266,23 +332,43 @@ namespace Ixnas.AltchaNet.Tests
                                           null,
                                           () => "SHA-512",
                                           AltchaValidationErrorCode.AlgorithmDoesNotMatch,
-                                          "Algorithm does not match the algorithm that was configured.");
+                                          "Algorithm does not match the algorithm that was configured.",
+                                          validationMethod);
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Default, "")]
-        [InlineData(CommonServiceType.Default, null)]
-        [InlineData(CommonServiceType.Default, "weirojoij")]
-        [InlineData(CommonServiceType.Default, "eyJzb21ldGhpbmciOiJlbHNlIiwiaXNudCI6InJpZ2h0In0=")]
-        [InlineData(CommonServiceType.Api, "")]
-        [InlineData(CommonServiceType.Api, null)]
-        [InlineData(CommonServiceType.Api, "weirojoij")]
-        [InlineData(CommonServiceType.Api, "iowjeroij.jwojeorij")]
-        [InlineData(CommonServiceType.Api, "iowjeroij?jwojeorij")]
-        [InlineData(CommonServiceType.Api, "iowjeroij?expires=oijewr34")]
+        [InlineData(CommonServiceType.Default, "", CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, null, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, "weirojoij", CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default,
+                    "eyJzb21ldGhpbmciOiJlbHNlIiwiaXNudCI6InJpZ2h0In0=",
+                    CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, "", CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, null, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, "weirojoij", CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, "iowjeroij.jwojeorij", CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, "iowjeroij?jwojeorij", CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api,
+                    "iowjeroij?expires=oijewr34",
+                    CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, "", CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Default, null, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Default, "weirojoij", CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Default,
+                    "eyJzb21ldGhpbmciOiJlbHNlIiwiaXNudCI6InJpZ2h0In0=",
+                    CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, "", CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, null, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, "weirojoij", CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, "iowjeroij.jwojeorij", CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, "iowjeroij?jwojeorij", CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api,
+                    "iowjeroij?expires=oijewr34",
+                    CommonServiceValidationMethod.Object)]
         public async Task GivenMalformedSalt_WhenCallingValidate_ReturnsNegativeResult(
             CommonServiceType commonServiceType,
-            string malformedSalt)
+            string malformedSalt,
+            CommonServiceValidationMethod validationMethod)
         {
             const string expectedMessage = "Salt does not have the expected format.";
             const AltchaValidationErrorCode expectedErrorCode = AltchaValidationErrorCode.InvalidSalt;
@@ -294,7 +380,7 @@ namespace Ixnas.AltchaNet.Tests
                                         null,
                                         null,
                                         _ => malformedSalt);
-            var run = await service.Validate(result.AltchaJson);
+            var run = await service.Validate(result.Altcha, validationMethod);
 
             Assert.False(run.IsValid);
             Assert.Equal(expectedErrorCode, run.ValidationError.Code);
@@ -313,7 +399,11 @@ namespace Ixnas.AltchaNet.Tests
                 AltchaValidationErrorCode.ChallengeIsInvalidBase64;
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
-            var run = await service.Validate(malformedAltcha64);
+            var responseSet = new AltchaResponseSet
+            {
+                Base64 = malformedAltcha64
+            };
+            var run = await service.Validate(responseSet, CommonServiceValidationMethod.Base64);
             Assert.False(run.IsValid);
             Assert.Equal(expectedErrorCode, run.ValidationError.Code);
             Assert.Equal(expectedMessage, run.ValidationError.Message);
@@ -332,18 +422,25 @@ namespace Ixnas.AltchaNet.Tests
                 AltchaValidationErrorCode.ChallengeIsInvalidJson;
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetDefaultService();
-            var run = await service.Validate(malformedAltcha64);
+            var responseSet = new AltchaResponseSet
+            {
+                Base64 = malformedAltcha64
+            };
+            var run = await service.Validate(responseSet, CommonServiceValidationMethod.Base64);
             Assert.False(run.IsValid);
             Assert.Equal(expectedErrorCode, run.ValidationError.Code);
             Assert.Equal(expectedMessage, run.ValidationError.Message);
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Default)]
-        [InlineData(CommonServiceType.Api)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
         public async Task
             GivenStoredChallengesAreExpired_WhenChallengeIsValidated_CleansExpiredChallengesFromInMemoryStore(
-                CommonServiceType commonServiceType)
+                CommonServiceType commonServiceType,
+                CommonServiceValidationMethod validationMethod)
         {
             var service = TestUtils.ServiceFactories[commonServiceType]
                                    .GetServiceWithExpiry(20, null, _clock);
@@ -351,15 +448,15 @@ namespace Ixnas.AltchaNet.Tests
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
 
-            var run1 = await service.Validate(result.AltchaJson);
+            var run1 = await service.Validate(result.Altcha, validationMethod);
             Assert.True(run1.IsValid);
 
             _clock.SetOffsetInSeconds(40);
-            var run2 = await service.Validate(result.AltchaJson); // cleaned
+            var run2 = await service.Validate(result.Altcha, validationMethod); // cleaned
             Assert.False(run2.IsValid);
 
             _clock.SetOffsetInSeconds(0);
-            var run3 = await service.Validate(result.AltchaJson);
+            var run3 = await service.Validate(result.Altcha, validationMethod);
             Assert.True(run3.IsValid);
         }
 
@@ -369,7 +466,8 @@ namespace Ixnas.AltchaNet.Tests
                                                           Func<int> replaceSecretNumberFn,
                                                           Func<string> replaceAlgorithmFn,
                                                           AltchaValidationErrorCode expectedErrorCode,
-                                                          string expectedErrorMessage)
+                                                          string expectedErrorMessage,
+                                                          CommonServiceValidationMethod validationMethod)
         {
             var challenge = service.Generate();
             var simulation = new AltchaFrontEndSimulation();
@@ -379,7 +477,7 @@ namespace Ixnas.AltchaNet.Tests
                                         null,
                                         replaceSecretNumberFn,
                                         replaceAlgorithmFn);
-            var validationResult = await service.Validate(result.AltchaJson);
+            var validationResult = await service.Validate(result.Altcha, validationMethod);
 
             Assert.True(result.Succeeded);
             Assert.False(validationResult.IsValid);

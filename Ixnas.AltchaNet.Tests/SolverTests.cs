@@ -149,7 +149,11 @@ namespace Ixnas.AltchaNet.Tests
             var challenge = service.Generate();
             var solver = GetDefaultSolver();
             var result = solver.Solve(challenge);
-            var validationResult = await service.Validate(result.Altcha);
+            var resultSet = new AltchaResponseSet
+            {
+                Base64 = result.Altcha
+            };
+            var validationResult = await service.Validate(resultSet, CommonServiceValidationMethod.Base64);
 
             Assert.True(validationResult.IsValid);
             Assert.Equal(string.Empty, validationResult.ValidationError.Message);
