@@ -9,7 +9,7 @@
         <RepositoryType>git</RepositoryType>
         <PackageTags>captcha, altcha, anti-spam, spam, security</PackageTags>
         <Authors>Sjoerd Scheffer</Authors>
-        <TargetFrameworks>netstandard2.0;net462;net6.0;net7.0;net8.0</TargetFrameworks>
+        <TargetFrameworks>netstandard2.0;net8.0;net9.0</TargetFrameworks>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
         <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
@@ -20,11 +20,6 @@
         <None Include="..\README.md" Pack="true" PackagePath=""/>
         <None Include="..\LICENSE.txt" Pack="true" PackagePath=""/>
         <None Include="..\LICENSE-ALTCHA.txt" Pack="true" PackagePath=""/>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
-        <Reference Include="System.Web"/>
-        <PackageReference Include="System.Text.Json" Version="4.6.0"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

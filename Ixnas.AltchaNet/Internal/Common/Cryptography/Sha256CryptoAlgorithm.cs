@@ -15,7 +15,7 @@ namespace Ixnas.AltchaNet.Internal.Common.Cryptography
 
         public byte[] Hash(byte[] bytes)
         {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
             return SHA256.HashData(bytes);
 #else
             using (var sha = new SHA256Managed())
