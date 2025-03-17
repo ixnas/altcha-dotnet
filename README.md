@@ -35,6 +35,7 @@ C# implementation of the [ALTCHA](http://altcha.org) challenge.
     - [Set up](#set-up-2)
     - [Usage](#usage-2)
 - [Example](#example)
+- [Contributing](#contributing)
 - [License](#license)
 
 ## Installation
@@ -305,6 +306,11 @@ This example attaches the solution from `solverResult.Altcha` to a form object a
 ## Example
 
 The `AspNetCoreExample` project contains a few examples for generating, solving and validating challenges.
+
+## Contributing
+
+Bug reports, fixes, ideas and suggestions are always welcome! Feel free to reach out by creating new issues, and I'll
+try to respond as soon as I can.
 
 ## License
 

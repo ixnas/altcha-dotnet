@@ -18,7 +18,7 @@ namespace Ixnas.AltchaNet
         ///     Timestamp after which the challenge expires. Can be used to periodically remove all expired
         ///     challenges from the store.
         /// </param>
-        /// <param name="cancellationToken">Cancellation token to cancel the operation</param>
+        /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
         Task Store(string challenge, DateTimeOffset expiryUtc, CancellationToken cancellationToken);
 
         /// <summary>
