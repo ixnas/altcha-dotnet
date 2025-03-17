@@ -513,6 +513,20 @@ namespace Ixnas.AltchaNet.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
         }
 
+        [Fact]
+        public async Task GivenCancellationTokenIsPassed_WhenValidateIsNotCanceled_ThenReturnResult()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var store = new AltchaChallengeStoreFake();
+            var service = GetServiceWithStoreFactory(() => store);
+            var form = GetDefaultForm();
+            var altcha = GenerateDefaultSpamFiltered(GetDefaultForm());
+            form.Altcha = altcha;
+            var validationResult = await service.ValidateSpamFilteredForm(form,
+                                            cancellationTokenSource.Token);
+            Assert.True(validationResult.IsValid);
+        }
+
         private async Task TestMalformedAltcha(AltchaSpamFilteredValidationErrorCode expectedErrorCode,
                                                string expectedErrorMessage,
                                                Func<string, string> malformedSignatureFn = null,

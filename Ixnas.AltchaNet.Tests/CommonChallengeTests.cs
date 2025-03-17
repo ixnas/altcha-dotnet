@@ -31,7 +31,7 @@ namespace Ixnas.AltchaNet.Tests
                 Base64 = altcha
             };
             await Assert.ThrowsAsync<ArgumentNullException>(() => service.Validate(responseSet,
-                                                                CommonServiceValidationMethod.Base64));
+                                                                     CommonServiceValidationMethod.Base64));
         }
 
         [Theory]
@@ -47,7 +47,7 @@ namespace Ixnas.AltchaNet.Tests
                 Object = null
             };
             await Assert.ThrowsAsync<ArgumentNullException>(() => service.Validate(responseSet,
-                                                                CommonServiceValidationMethod.Object));
+                                                                     CommonServiceValidationMethod.Object));
         }
 
         [Theory]
@@ -90,6 +90,28 @@ namespace Ixnas.AltchaNet.Tests
             // ReSharper disable once MethodHasAsyncOverload
             cancellationTokenSource.Cancel();
             await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+        }
+
+        [Theory]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
+        public async Task GivenCancellationTokenIsPassed_WhenValidateIsNotCanceled_ThenReturnResult(
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var store = new AltchaChallengeStoreFake();
+            var service = TestUtils.ServiceFactories[commonServiceType]
+                                   .GetServiceWithStoreFactory(() => (IAltchaCancellableChallengeStore)store);
+            var challenge = service.Generate();
+            var simulation = new AltchaFrontEndSimulation();
+            var result = simulation.Run(challenge);
+            var validationResult = await service.Validate(result.Altcha,
+                                                          validationMethod,
+                                                          cancellationTokenSource.Token);
+            Assert.True(validationResult.IsValid);
         }
 
         [Theory]
@@ -181,7 +203,7 @@ namespace Ixnas.AltchaNet.Tests
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
             await Assert.ThrowsAsync<MissingStoreException>(() => service.Validate(result.Altcha,
-                                                                validationMethod));
+                                                                     validationMethod));
         }
 
         [Theory]
@@ -200,7 +222,7 @@ namespace Ixnas.AltchaNet.Tests
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
             await Assert.ThrowsAsync<MissingStoreException>(() => service.Validate(result.Altcha,
-                                                                validationMethod));
+                                                                     validationMethod));
         }
 
         [Theory]
