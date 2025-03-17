@@ -20,7 +20,7 @@ namespace Ixnas.AltchaNet.Tests
         [Fact]
         public void GivenNoKeySpecified_WhenBuildCalled_ThenThrowsMissingStoreException()
         {
-            var builder = _builder.UseStore(new AltchaChallengeStoreFake());
+            var builder = _builder.UseStore((IAltchaCancellableChallengeStore)new AltchaChallengeStoreFake());
             Assert.Throws<MissingAlgorithmException>(() => builder.Build());
         }
 
@@ -31,10 +31,42 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Fact]
+        public void GivenCancellableStoreIsNull_WhenAddStoreCalled_ThenThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+                                                     _builder.UseStore(null as
+                                                                           IAltchaCancellableChallengeStore));
+        }
+
+        [Fact]
         public void GivenStoreFactoryIsNull_WhenAddStoreCalled_ThenThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() =>
                                                      _builder.UseStore(null as Func<IAltchaChallengeStore>));
+        }
+
+        [Fact]
+        public void GivenCancellableStoreFactoryIsNull_WhenAddStoreCalled_ThenThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+                                                     _builder.UseStore(null as Func<
+                                                                           IAltchaCancellableChallengeStore>));
+        }
+
+        [Fact]
+        public void GivenStoreIsNotNull_WhenAddStoreCalled_ThenReturnsBuilder()
+        {
+            var store = new AltchaChallengeStoreFake();
+            var builder = _builder.UseStore((IAltchaCancellableChallengeStore)store);
+            Assert.NotNull(builder);
+        }
+
+        [Fact]
+        public void GivenStoreFactoryIsNotNull_WhenAddStoreCalled_ThenReturnsBuilder()
+        {
+            var store = new AltchaChallengeStoreFake();
+            var builder = _builder.UseStore(() => (IAltchaChallengeStore)store);
+            Assert.NotNull(builder);
         }
 
         [Fact]
@@ -58,27 +90,44 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Fact]
-        public void GivenStoreIsNotNull_WhenAddStoreCalled_ThenReturnsBuilder()
-        {
-            var store = new AltchaChallengeStoreFake();
-            var builder = _builder.UseStore(store);
-            Assert.NotNull(builder);
-        }
-
-        [Fact]
-        public void GivenStoreFactoryIsNotNull_WhenAddStoreCalled_ThenReturnsBuilder()
-        {
-            var store = new AltchaChallengeStoreFake();
-            var builder = _builder.UseStore(() => store);
-            Assert.NotNull(builder);
-        }
-
-        [Fact]
         public void GivenStoreAndKeyAreAdded_WhenBuildCalled_ThenReturnNewService()
         {
             var key = TestUtils.GetKey();
             var store = new AltchaChallengeStoreFake();
-            var service = _builder.UseStore(store)
+            var service = _builder.UseStore((IAltchaChallengeStore)store)
+                                  .UseSha256(key)
+                                  .Build();
+            Assert.NotNull(service);
+        }
+
+        [Fact]
+        public void GivenStoreFactoryAndKeyAreAdded_WhenBuildCalled_ThenReturnNewService()
+        {
+            var key = TestUtils.GetKey();
+            var store = new AltchaChallengeStoreFake();
+            var service = _builder.UseStore(() => (IAltchaChallengeStore)store)
+                                  .UseSha256(key)
+                                  .Build();
+            Assert.NotNull(service);
+        }
+
+        [Fact]
+        public void GivenCancellableStoreAndKeyAreAdded_WhenBuildCalled_ThenReturnNewService()
+        {
+            var key = TestUtils.GetKey();
+            var store = new AltchaChallengeStoreFake();
+            var service = _builder.UseStore((IAltchaCancellableChallengeStore)store)
+                                  .UseSha256(key)
+                                  .Build();
+            Assert.NotNull(service);
+        }
+
+        [Fact]
+        public void GivenCancellableStoreFactoryAndKeyAreAdded_WhenBuildCalled_ThenReturnNewService()
+        {
+            var key = TestUtils.GetKey();
+            var store = new AltchaChallengeStoreFake();
+            var service = _builder.UseStore(() => (IAltchaCancellableChallengeStore)store)
                                   .UseSha256(key)
                                   .Build();
             Assert.NotNull(service);
@@ -157,7 +206,7 @@ namespace Ixnas.AltchaNet.Tests
         public void WhenBuilderMethodsAreCalled_ThenReturnNewBuilderInstance()
         {
             var store = new AltchaChallengeStoreFake();
-            var builder2 = _builder.UseStore(store);
+            var builder2 = _builder.UseStore((IAltchaCancellableChallengeStore)store);
             Assert.NotEqual(_builder, builder2);
 
             var key = TestUtils.GetKey();
@@ -173,8 +222,14 @@ namespace Ixnas.AltchaNet.Tests
             var builder6 = builder5.SetExpiryInSeconds(5);
             Assert.NotEqual(builder5, builder6);
 
-            var builder7 = builder6.UseStore(() => store);
+            var builder7 = builder6.UseStore(() => (IAltchaChallengeStore)store);
             Assert.NotEqual(builder6, builder7);
+
+            var builder8 = builder7.UseStore((IAltchaCancellableChallengeStore)store);
+            Assert.NotEqual(builder7, builder8);
+
+            var builder9 = builder8.UseStore(() => (IAltchaCancellableChallengeStore)store);
+            Assert.NotEqual(builder8, builder9);
         }
     }
 }

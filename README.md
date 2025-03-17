@@ -65,15 +65,15 @@ var altchaService = Altcha.CreateServiceBuilder()
 
 Here is a description of the different configuration options.
 
-| Method                                               | Description                                                                                                                                                                                                                     |
-|------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `UseStore(Func<IAltchaChallengeStore> storeFactory)` | (Required) Configures a store factory to use for previously verified ALTCHA responses. Used to prevent replay attacks.                                                                                                          |
-| `UseStore(IAltchaChallengeStore store)`              | (Required) Configures a store instance to use for previously verified ALTCHA responses. Used to prevent replay attacks.                                                                                                         |
-| `UseSha256(byte[] key)`                              | (Required) Configures the SHA-256 algorithm for hashing and signing. Must be 64 bytes long. Currently the only supported algorithm.                                                                                             |
-| `SetComplexity(int min, int max)`                    | (Optional) Overrides the default complexity to tweak the amount of computational effort a client has to put in. See [ALTCHA's documentation](https://altcha.org/docs/complexity/) for more information (default 50000, 100000). |
-| `SetExpiryInSeconds(int expiryInSeconds)`            | (Optional) Overrides the default time it takes for a challenge to expire (default 120 seconds).                                                                                                                                 |
-| `UseInMemoryStore()`                                 | Configures a simple in-memory store for previously verified ALTCHA responses. Should only be used for testing purposes.                                                                                                         |
-| `Build()`                                            | Returns a new configured service instance.                                                                                                                                                                                      |
+| Method                                                                                                                   | Description                                                                                                                                                                                                                     |
+|--------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `UseStore(Func<IAltchaChallengeStore> storeFactory)`<br/>`UseStore(Func<IAltchaCancellableChallengeStore> storeFactory)` | (Required) Configures a store factory to use for previously verified ALTCHA responses. Used to prevent replay attacks.                                                                                                          |
+| `UseStore(IAltchaChallengeStore store)`<br/>`UseStore(IAltchaCancellableChallengeStore store)`                           | (Required) Configures a store instance to use for previously verified ALTCHA responses. Used to prevent replay attacks.                                                                                                         |
+| `UseSha256(byte[] key)`                                                                                                  | (Required) Configures the SHA-256 algorithm for hashing and signing. Must be 64 bytes long. Currently the only supported algorithm.                                                                                             |
+| `SetComplexity(int min, int max)`                                                                                        | (Optional) Overrides the default complexity to tweak the amount of computational effort a client has to put in. See [ALTCHA's documentation](https://altcha.org/docs/complexity/) for more information (default 50000, 100000). |
+| `SetExpiryInSeconds(int expiryInSeconds)`                                                                                | (Optional) Overrides the default time it takes for a challenge to expire (default 120 seconds).                                                                                                                                 |
+| `UseInMemoryStore()`                                                                                                     | Configures a simple in-memory store for previously verified ALTCHA responses. Should only be used for testing purposes.                                                                                                         |
+| `Build()`                                                                                                                | Returns a new configured service instance.                                                                                                                                                                                      |
 
 #### Key
 
@@ -92,9 +92,14 @@ using (var rng = RandomNumberGenerator.Create())
 
 The library requires a store implementation to store previously verified challenge responses.
 You can use anything persistent, like a database or a file.
-As long as it implements the `IAltchaChallengeStore` interface, it will work.
+As long as it implements the `IAltchaChallengeStore` or the `IAltchaCancellableStore` interface, it will work.
+
+For persistent (I/O-bound) storage implementations, you should probably implement `IAltchaCancellableStore` which
+supports `CancellationToken`s.
+
 You can use `expiryUtc` to periodically remove expired challenges from your store.
-For example, the bundled in-memory store looks similar to this:
+
+As an example, the bundled in-memory store looks similar to this:
 
 ```csharp
 public class InMemoryStore : IAltchaChallengeStore
@@ -149,7 +154,7 @@ JSON object.
 To validate a response:
 
 ```csharp
-var validationResult = await altchaService.Validate(altcha);
+var validationResult = await altchaService.Validate(altcha, cancellationToken);
 if (!validationResult.IsValid)
 {
     _logger.LogInformation(validationResult.ValidationError.Message);
@@ -159,6 +164,9 @@ if (!validationResult.IsValid)
 
 The `altcha` parameter can either be a base64-encoded JSON string (like the raw value of the `altcha` field in a
 submitted form), or an already decoded and deserialized `AltchaResponse` object.
+
+The `cancellationToken` parameter can be passed if the service was set up with a `IAltchaCancellableChallengeStore`.
+The cancellation token can cancel queries and updates to the store implementation.
 
 ## Verifying challenges from ALTCHA's API
 
@@ -179,14 +187,14 @@ var altchaApiService = Altcha.CreateApiServiceBuilder()
 
 Here is a description of the different configuration options.
 
-| Method                                               | Description                                                                                                               |
-|------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `UseStore(Func<IAltchaChallengeStore> storeFactory)` | (Required) Configures a store factory to use for previously verified ALTCHA responses. Used to prevent replay attacks.    |
-| `UseStore(IAltchaChallengeStore store)`              | (Required) Configures a store to use for previously verified ALTCHA responses. Used to prevent replay attacks.            |
-| `UseApiSecret(string secret)`                        | (Required) Configures the API secret used to validate challenges from ALTCHA's API. Starts with either "sec_" or "_csec". |
-| `SetMaxSpamFilterScore(double score)`                | (Optional) Overrides the default maximum score that a spam filtered form may have before it's rejected (default 2).       |
-| `UseInMemoryStore()`                                 | Configures a simple in-memory store for previously verified ALTCHA responses. Should only be used for testing purposes.   |
-| `Build()`                                            | Returns a new configured service instance.                                                                                |
+| Method                                                                                                                   | Description                                                                                                               |
+|--------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `UseStore(Func<IAltchaChallengeStore> storeFactory)`<br/>`UseStore(Func<IAltchaCancellableChallengeStore> storeFactory)` | (Required) Configures a store factory to use for previously verified ALTCHA responses. Used to prevent replay attacks.    |
+| `UseStore(IAltchaChallengeStore store)`<br/>`UseStore(IAltchaCancellableChallengeStore store)`                           | (Required) Configures a store instance to use for previously verified ALTCHA responses. Used to prevent replay attacks.   |
+| `UseApiSecret(string secret)`                                                                                            | (Required) Configures the API secret used to validate challenges from ALTCHA's API. Starts with either "sec_" or "_csec". |
+| `SetMaxSpamFilterScore(double score)`                                                                                    | (Optional) Overrides the default maximum score that a spam filtered form may have before it's rejected (default 2).       |
+| `UseInMemoryStore()`                                                                                                     | Configures a simple in-memory store for previously verified ALTCHA responses. Should only be used for testing purposes.   |
+| `Build()`                                                                                                                | Returns a new configured service instance.                                                                                |
 
 The store uses the [same interface](#store) as it does for the self-hosted service.
 You can even use the same instance if you like.
@@ -198,7 +206,7 @@ You can even use the same instance if you like.
 To validate a regular response:
 
 ```csharp
-var validationResult = await altchaApiService.Validate(altcha);
+var validationResult = await altchaApiService.Validate(altcha, cancellationToken);
 if (!validationResult.IsValid)
 {
     _logger.LogInformation(validationResult.ValidationError.Message);
@@ -228,7 +236,7 @@ public class ExampleForm
 To validate the form:
 
 ```csharp
-var validationResult = await altchaApiService.ValidateSpamFilteredForm(form);
+var validationResult = await altchaApiService.ValidateSpamFilteredForm(form, cancellationToken);
 if (!validationResult.IsValid)
 {
     _logger.LogInformation(validationResult.ValidationError.Message);
@@ -242,7 +250,7 @@ if (!validationResult.PassedSpamFilter)
 If you prefer to use a different property for the ALTCHA payload, you can use a member expression to select it:
 
 ```csharp
-var validationResult = await altchaApiService.ValidateSpamFilteredForm(form, x => x.AnotherProperty);
+var validationResult = await altchaApiService.ValidateSpamFilteredForm(form, cancellationToken, x => x.AnotherProperty);
 ```
 
 The result's `IsValid` property tells you whether the form data, verification data and the signature are valid.

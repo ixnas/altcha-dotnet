@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Tests.Abstractions;
@@ -50,6 +51,48 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
+        [InlineData(CommonServiceType.Default,
+                    CommonServiceValidationMethod.Base64,
+                    CancellationMethod.Store)]
+        [InlineData(CommonServiceType.Default,
+                    CommonServiceValidationMethod.Base64,
+                    CancellationMethod.Exists)]
+        [InlineData(CommonServiceType.Default,
+                    CommonServiceValidationMethod.Object,
+                    CancellationMethod.Store)]
+        [InlineData(CommonServiceType.Default,
+                    CommonServiceValidationMethod.Object,
+                    CancellationMethod.Exists)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64, CancellationMethod.Store)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64, CancellationMethod.Exists)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object, CancellationMethod.Store)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object, CancellationMethod.Exists)]
+        public async Task GivenCancellationTokenIsPassed_WhenValidateCanceled_ThenStoreCanCancel(
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod,
+            CancellationMethod cancellationMethod)
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var store = new AltchaChallengeStoreFake
+            {
+                CancellationSimulation = cancellationMethod
+            };
+            var service = TestUtils.ServiceFactories[commonServiceType]
+                                   .GetServiceWithStoreFactory(() => (IAltchaCancellableChallengeStore)store);
+            var challenge = service.Generate();
+            var simulation = new AltchaFrontEndSimulation();
+            var result = simulation.Run(challenge);
+            // ReSharper disable once MethodSupportsCancellation
+            var task = Task.Run(async () =>
+                                    await service.Validate(result.Altcha,
+                                                           validationMethod,
+                                                           cancellationTokenSource.Token));
+            // ReSharper disable once MethodHasAsyncOverload
+            cancellationTokenSource.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+        }
+
+        [Theory]
         [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
         [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
         [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
@@ -86,7 +129,33 @@ namespace Ixnas.AltchaNet.Tests
                                    .GetServiceWithStoreFactory(() =>
                                    {
                                        storeWasInstantiated = true;
-                                       return new AltchaChallengeStoreFake();
+                                       return (IAltchaChallengeStore)new AltchaChallengeStoreFake();
+                                   });
+            var challenge = service.Generate();
+            var simulation = new AltchaFrontEndSimulation();
+            var result = simulation.Run(challenge);
+
+            Assert.False(storeWasInstantiated);
+            await service.Validate(result.Altcha, validationMethod);
+            Assert.True(storeWasInstantiated);
+        }
+
+        [Theory]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
+        public async Task GivenCancellableStoreFactoryProvided_WhenCallingValidate_InstantiatesStore(
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
+        {
+            var storeWasInstantiated = false;
+            var service = TestUtils.ServiceFactories[commonServiceType]
+                                   .GetServiceWithStoreFactory(() =>
+                                   {
+                                       storeWasInstantiated = true;
+                                       return
+                                           (IAltchaCancellableChallengeStore)new AltchaChallengeStoreFake();
                                    });
             var challenge = service.Generate();
             var simulation = new AltchaFrontEndSimulation();
@@ -107,7 +176,7 @@ namespace Ixnas.AltchaNet.Tests
             CommonServiceValidationMethod validationMethod)
         {
             var service = TestUtils.ServiceFactories[commonServiceType]
-                                   .GetServiceWithStoreFactory(() => null);
+                                   .GetServiceWithStoreFactory(() => (IAltchaChallengeStore)null);
             var challenge = service.Generate();
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
@@ -120,7 +189,26 @@ namespace Ixnas.AltchaNet.Tests
         [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
         [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
         [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
-        public async Task GivenChallengedIsSolvedAfterExpiry_WhenCallingValidate_ReturnsNegativeResult(
+        public async Task
+            GivenCancellableStoreFactoryReturnsNull_WhenCallingValidate_ThrowsMissingStoreException(
+                CommonServiceType commonServiceType,
+                CommonServiceValidationMethod validationMethod)
+        {
+            var service = TestUtils.ServiceFactories[commonServiceType]
+                                   .GetServiceWithStoreFactory(() => (IAltchaCancellableChallengeStore)null);
+            var challenge = service.Generate();
+            var simulation = new AltchaFrontEndSimulation();
+            var result = simulation.Run(challenge);
+            await Assert.ThrowsAsync<MissingStoreException>(() => service.Validate(result.Altcha,
+                                                                validationMethod));
+        }
+
+        [Theory]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
+        public async Task GivenChallengeIsSolvedAfterExpiry_WhenCallingValidate_ReturnsNegativeResult(
             CommonServiceType commonServiceType,
             CommonServiceValidationMethod validationMethod)
         {
@@ -128,7 +216,7 @@ namespace Ixnas.AltchaNet.Tests
             const string expectedErrorString = "Challenge expired.";
 
             var service = TestUtils.ServiceFactories[commonServiceType]
-                                   .GetServiceWithExpiry(1, null, _clock);
+                                   .GetServiceWithExpiry(1, (IAltchaCancellableChallengeStore)null, _clock);
             var challenge = service.Generate();
             _clock.SetOffsetInSeconds(2);
             var simulation = new AltchaFrontEndSimulation();
@@ -155,13 +243,15 @@ namespace Ixnas.AltchaNet.Tests
             const string expectedErrorString = "Challenge expired.";
 
             var service = TestUtils.ServiceFactories[commonServiceType]
-                                   .GetServiceWithExpiry(1, null, _clock);
+                                   .GetServiceWithExpiry(1, (IAltchaCancellableChallengeStore)null, _clock);
             var challenge = service.Generate();
             _clock.SetOffsetInSeconds(2);
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
             var newService = TestUtils.ServiceFactories[commonServiceType]
-                                      .GetServiceWithExpiry(30, null, _clock);
+                                      .GetServiceWithExpiry(30,
+                                                            (IAltchaCancellableChallengeStore)null,
+                                                            _clock);
             var validationResult = await newService.Validate(result.Altcha, validationMethod);
 
             Assert.False(validationResult.IsValid);
@@ -174,13 +264,38 @@ namespace Ixnas.AltchaNet.Tests
         [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
         [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
         [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
-        public async Task GivenChallengedHasExpiry_WhenCallingValidate_StoresMatchingExpiry(
+        public async Task GivenChallengeHasExpiry_WhenCallingValidate_StoresMatchingExpiry(
             CommonServiceType commonServiceType,
             CommonServiceValidationMethod validationMethod)
         {
             var store = new AltchaChallengeStoreFake();
             var service = TestUtils.ServiceFactories[commonServiceType]
-                                   .GetServiceWithExpiry(30, store);
+                                   .GetServiceWithExpiry(30, (IAltchaChallengeStore)store);
+            var challenge = service.Generate();
+            var tenSecondsFromNow = DateTimeOffset.UtcNow.AddSeconds(30);
+            var marginStart = tenSecondsFromNow.AddSeconds(-2);
+            var marginEnd = tenSecondsFromNow.AddSeconds(2);
+
+            var simulation = new AltchaFrontEndSimulation();
+            var result = simulation.Run(challenge);
+            await service.Validate(result.Altcha, validationMethod);
+
+            var expiry = store.Stored.Value.Expiry;
+            Assert.InRange(expiry, marginStart, marginEnd);
+        }
+
+        [Theory]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Default, CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceType.Api, CommonServiceValidationMethod.Object)]
+        public async Task GivenChallengeHasExpiry_WhenCallingValidate_CancellableStoresMatchingExpiry(
+            CommonServiceType commonServiceType,
+            CommonServiceValidationMethod validationMethod)
+        {
+            var store = new AltchaChallengeStoreFake();
+            var service = TestUtils.ServiceFactories[commonServiceType]
+                                   .GetServiceWithExpiry(30, (IAltchaCancellableChallengeStore)store);
             var challenge = service.Generate();
             var tenSecondsFromNow = DateTimeOffset.UtcNow.AddSeconds(30);
             var marginStart = tenSecondsFromNow.AddSeconds(-2);
@@ -443,7 +558,7 @@ namespace Ixnas.AltchaNet.Tests
                 CommonServiceValidationMethod validationMethod)
         {
             var service = TestUtils.ServiceFactories[commonServiceType]
-                                   .GetServiceWithExpiry(20, null, _clock);
+                                   .GetServiceWithExpiry(20, (IAltchaCancellableChallengeStore)null, _clock);
             var challenge = service.Generate();
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);

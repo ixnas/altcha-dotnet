@@ -23,7 +23,7 @@ namespace Ixnas.AltchaNet
         private readonly Clock _clock = new DefaultClock();
         private readonly byte[] _key;
         private readonly double _maxSpamFilterScore = Defaults.MaxSpamFilterScore;
-        private readonly Func<IAltchaChallengeStore> _storeFactory;
+        private readonly Func<IAltchaCancellableChallengeStore> _storeFactory;
         private readonly bool _useInMemoryStore;
 
         internal AltchaApiServiceBuilder()
@@ -32,7 +32,7 @@ namespace Ixnas.AltchaNet
 
         private AltchaApiServiceBuilder(byte[] key,
                                         bool useInMemoryStore,
-                                        Func<IAltchaChallengeStore> storeFactory,
+                                        Func<IAltchaCancellableChallengeStore> storeFactory,
                                         Clock clock,
                                         double maxSpamFilterScore)
         {
@@ -53,7 +53,8 @@ namespace Ixnas.AltchaNet
             if (_key == null)
                 throw new MissingApiSecretException();
             var inMemoryStore = new InMemoryStore(_clock);
-            var storeFactory = _storeFactory ?? (() => inMemoryStore);
+            var inMemoryStoreWrapped = new ChallengeStoreAdapter(inMemoryStore);
+            var storeFactory = _storeFactory ?? (() => inMemoryStoreWrapped);
             var serializer = new SystemTextJsonSerializer();
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
             var saltParser = new SaltParser(_clock);
@@ -130,6 +131,21 @@ namespace Ixnas.AltchaNet
             Guard.NotNull(store);
             return new AltchaApiServiceBuilder(_key,
                                                _useInMemoryStore,
+                                               () => new ChallengeStoreAdapter(store),
+                                               _clock,
+                                               _maxSpamFilterScore);
+        }
+
+        /// <summary>
+        ///     (Required) Configures a store to use for previously verified ALTCHA responses. Used to prevent replay attacks.
+        /// </summary>
+        /// <param name="store">Store to use that supports CancellationTokens.</param>
+        /// <returns>A new instance of the builder with the updated configuration.</returns>
+        public AltchaApiServiceBuilder UseStore(IAltchaCancellableChallengeStore store)
+        {
+            Guard.NotNull(store);
+            return new AltchaApiServiceBuilder(_key,
+                                               _useInMemoryStore,
                                                () => store,
                                                _clock,
                                                _maxSpamFilterScore);
@@ -142,6 +158,22 @@ namespace Ixnas.AltchaNet
         /// <param name="storeFactory">Store factory function to use.</param>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
         public AltchaApiServiceBuilder UseStore(Func<IAltchaChallengeStore> storeFactory)
+        {
+            Guard.NotNull(storeFactory);
+            return new AltchaApiServiceBuilder(_key,
+                                               _useInMemoryStore,
+                                               () => new ChallengeStoreAdapter(storeFactory()),
+                                               _clock,
+                                               _maxSpamFilterScore);
+        }
+
+        /// <summary>
+        ///     (Required) Configures a store factory to use for previously verified ALTCHA responses. Used to prevent replay
+        ///     attacks.
+        /// </summary>
+        /// <param name="storeFactory">Store factory function to use of which the store supports CancellationTokens.</param>
+        /// <returns>A new instance of the builder with the updated configuration.</returns>
+        public AltchaApiServiceBuilder UseStore(Func<IAltchaCancellableChallengeStore> storeFactory)
         {
             Guard.NotNull(storeFactory);
             return new AltchaApiServiceBuilder(_key,

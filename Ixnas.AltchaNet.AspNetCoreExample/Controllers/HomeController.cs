@@ -64,22 +64,25 @@ public class HomeController : Controller
     }
 
     [HttpPost("/verifySelfHosted")]
-    public async Task<AltchaValidationResult> VerifySelfHosted([FromForm] string altcha)
+    public async Task<AltchaValidationResult> VerifySelfHosted(CancellationToken cancellationToken,
+                                                               [FromForm] string altcha)
     {
-        return await _service.Validate(altcha);
+        return await _service.Validate(altcha, cancellationToken);
     }
 
     [HttpPost("/verifyApiRegular")]
-    public async Task<AltchaValidationResult> VerifyApiRegular([FromForm] string altcha)
+    public async Task<AltchaValidationResult> VerifyApiRegular(CancellationToken cancellationToken,
+                                                               [FromForm] string altcha)
     {
-        return await _apiService.Validate(altcha);
+        return await _apiService.Validate(altcha, cancellationToken);
     }
 
     [HttpPost("/verifyApiSpamFiltered")]
     public async Task<AltchaSpamFilteredValidationResult> VerifyApiSpamFiltered(
+        CancellationToken cancellationToken,
         [FromForm] SpamFilterFormModel spamFilterFormModel)
     {
-        return await _apiService.ValidateSpamFilteredForm(spamFilterFormModel);
+        return await _apiService.ValidateSpamFilteredForm(spamFilterFormModel, cancellationToken);
     }
 
     [HttpGet("/simulateMachineToMachine")]

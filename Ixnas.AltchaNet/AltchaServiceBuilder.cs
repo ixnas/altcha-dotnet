@@ -24,14 +24,14 @@ namespace Ixnas.AltchaNet
         private readonly byte[] _key;
         private readonly int _max = Defaults.ComplexityMax;
         private readonly int _min = Defaults.ComplexityMin;
-        private readonly Func<IAltchaChallengeStore> _storeFactory;
+        private readonly Func<IAltchaCancellableChallengeStore> _storeFactory;
         private readonly bool _useInMemoryStore;
 
         internal AltchaServiceBuilder()
         {
         }
 
-        private AltchaServiceBuilder(Func<IAltchaChallengeStore> storeFactory,
+        private AltchaServiceBuilder(Func<IAltchaCancellableChallengeStore> storeFactory,
                                      Clock clock,
                                      byte[] key,
                                      int min,
@@ -59,7 +59,8 @@ namespace Ixnas.AltchaNet
                 throw new MissingAlgorithmException();
 
             var inMemoryStore = new InMemoryStore(_clock);
-            var storeFactory = _storeFactory ?? (() => inMemoryStore);
+            var inMemoryStoreWrapped = new ChallengeStoreAdapter(inMemoryStore);
+            var storeFactory = _storeFactory ?? (() => inMemoryStoreWrapped);
             var serializer = new SystemTextJsonSerializer();
             var secretNumberGenerator = new RandomNumberGenerator(_min, _max);
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
@@ -100,6 +101,23 @@ namespace Ixnas.AltchaNet
         public AltchaServiceBuilder UseStore(IAltchaChallengeStore store)
         {
             Guard.NotNull(store);
+            return new AltchaServiceBuilder(() => new ChallengeStoreAdapter(store),
+                                            _clock,
+                                            _key,
+                                            _min,
+                                            _max,
+                                            _expiryInSeconds,
+                                            _useInMemoryStore);
+        }
+
+        /// <summary>
+        ///     (Required) Configures a store to use for previously verified ALTCHA responses. Used to prevent replay attacks.
+        /// </summary>
+        /// <param name="store">Store to use that supports CancellationTokens.</param>
+        /// <returns>A new instance of the builder with the updated configuration.</returns>
+        public AltchaServiceBuilder UseStore(IAltchaCancellableChallengeStore store)
+        {
+            Guard.NotNull(store);
             return new AltchaServiceBuilder(() => store,
                                             _clock,
                                             _key,
@@ -116,6 +134,24 @@ namespace Ixnas.AltchaNet
         /// <param name="storeFactory">Store factory function to use.</param>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
         public AltchaServiceBuilder UseStore(Func<IAltchaChallengeStore> storeFactory)
+        {
+            Guard.NotNull(storeFactory);
+            return new AltchaServiceBuilder(() => new ChallengeStoreAdapter(storeFactory()),
+                                            _clock,
+                                            _key,
+                                            _min,
+                                            _max,
+                                            _expiryInSeconds,
+                                            _useInMemoryStore);
+        }
+
+        /// <summary>
+        ///     (Required) Configures a store factory to use for previously verified ALTCHA responses. Used to prevent replay
+        ///     attacks.
+        /// </summary>
+        /// <param name="storeFactory">Store factory function to use of which the store supports CancellationTokens.</param>
+        /// <returns>A new instance of the builder with the updated configuration.</returns>
+        public AltchaServiceBuilder UseStore(Func<IAltchaCancellableChallengeStore> storeFactory)
         {
             Guard.NotNull(storeFactory);
             return new AltchaServiceBuilder(storeFactory,

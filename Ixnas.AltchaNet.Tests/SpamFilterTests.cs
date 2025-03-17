@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Tests.Fakes;
@@ -488,6 +489,30 @@ namespace Ixnas.AltchaNet.Tests
             Assert.Equal(expectedErrorString, result.ValidationError.Message);
         }
 
+        [Theory]
+        [InlineData(CancellationMethod.Store)]
+        [InlineData(CancellationMethod.Exists)]
+        public async Task GivenCancellationTokenIsPassed_WhenValidateCanceled_ThenStoreCanCancel(
+            CancellationMethod cancellationMethod)
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var store = new AltchaChallengeStoreFake
+            {
+                CancellationSimulation = cancellationMethod
+            };
+            var service = GetServiceWithStoreFactory(() => store);
+            var form = GetDefaultForm();
+            var altcha = GenerateDefaultSpamFiltered(GetDefaultForm());
+            form.Altcha = altcha;
+            // ReSharper disable once MethodSupportsCancellation
+            var task = Task.Run(async () =>
+                                    await service.ValidateSpamFilteredForm(form,
+                                             cancellationTokenSource.Token));
+            // ReSharper disable once MethodHasAsyncOverload
+            cancellationTokenSource.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+        }
+
         private async Task TestMalformedAltcha(AltchaSpamFilteredValidationErrorCode expectedErrorCode,
                                                string expectedErrorMessage,
                                                Func<string, string> malformedSignatureFn = null,
@@ -550,7 +575,8 @@ namespace Ixnas.AltchaNet.Tests
                          .Build();
         }
 
-        private static AltchaApiService GetServiceWithStoreFactory(Func<IAltchaChallengeStore> storeFactory)
+        private static AltchaApiService GetServiceWithStoreFactory(
+            Func<IAltchaCancellableChallengeStore> storeFactory)
         {
             return Altcha.CreateApiServiceBuilder()
                          .UseStore(storeFactory)

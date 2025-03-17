@@ -1,5 +1,6 @@
 using System;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Ixnas.AltchaNet.Internal.ProofOfWork;
 using Ixnas.AltchaNet.Internal.SpamFilter;
@@ -28,7 +29,19 @@ namespace Ixnas.AltchaNet
         /// <returns>A result object representing the result of the validation.</returns>
         public async Task<AltchaValidationResult> Validate(string altchaBase64)
         {
-            return await _responseValidator.Validate(altchaBase64);
+            return await _responseValidator.Validate(altchaBase64, CancellationToken.None);
+        }
+
+        /// <summary>
+        ///     Validates a solved ALTCHA challenge response.
+        /// </summary>
+        /// <param name="altchaBase64">A base64-encoded ALTCHA response, typically a form field named "altcha".</param>
+        /// <param name="cancellationToken">A cancellation token to cancel I/O related work.</param>
+        /// <returns>A result object representing the result of the validation.</returns>
+        public async Task<AltchaValidationResult> Validate(string altchaBase64,
+                                                           CancellationToken cancellationToken)
+        {
+            return await _responseValidator.Validate(altchaBase64, cancellationToken);
         }
 
         /// <summary>
@@ -38,7 +51,19 @@ namespace Ixnas.AltchaNet
         /// <returns>A result object representing the result of the validation.</returns>
         public async Task<AltchaValidationResult> Validate(AltchaResponse altchaResponse)
         {
-            return await _responseValidator.Validate(altchaResponse);
+            return await _responseValidator.Validate(altchaResponse, CancellationToken.None);
+        }
+
+        /// <summary>
+        ///     Validates a solved ALTCHA challenge response.
+        /// </summary>
+        /// <param name="altchaResponse">A (deserialized) ALTCHA response.</param>
+        /// <param name="cancellationToken">A cancellation token to cancel I/O related work.</param>
+        /// <returns>A result object representing the result of the validation.</returns>
+        public async Task<AltchaValidationResult> Validate(AltchaResponse altchaResponse,
+                                                           CancellationToken cancellationToken)
+        {
+            return await _responseValidator.Validate(altchaResponse, cancellationToken);
         }
 
         /// <summary>
@@ -55,7 +80,30 @@ namespace Ixnas.AltchaNet
             T form,
             Expression<Func<T, string>> altchaSelector = null)
         {
-            return await _spamFilterValidator.ValidateSpamFilteredForm(form, altchaSelector);
+            return await _spamFilterValidator.ValidateSpamFilteredForm(form,
+                                                                       altchaSelector,
+                                                                       CancellationToken.None);
+        }
+
+        /// <summary>
+        ///     Validates a form that was processed through the ALTCHA project's spam filter API.
+        /// </summary>
+        /// <param name="form">
+        ///     A form object with public properties as form fields to validate. Must contain a string property
+        ///     named Altcha containing the verification data.
+        /// </param>
+        /// <param name="cancellationToken">A cancellation token to cancel I/O related work.</param>
+        /// <param name="altchaSelector">(Optional) Expression to select a different property than the default "Altcha" property.</param>
+        /// <typeparam name="T">The concrete type of the form.</typeparam>
+        /// <returns></returns>
+        public async Task<AltchaSpamFilteredValidationResult> ValidateSpamFilteredForm<T>(
+            T form,
+            CancellationToken cancellationToken,
+            Expression<Func<T, string>> altchaSelector = null)
+        {
+            return await _spamFilterValidator.ValidateSpamFilteredForm(form,
+                                                                       altchaSelector,
+                                                                       cancellationToken);
         }
     }
 }

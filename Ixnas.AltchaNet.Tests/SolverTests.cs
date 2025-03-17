@@ -211,7 +211,7 @@ namespace Ixnas.AltchaNet.Tests
             const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.ChallengeExpired;
 
             var service = TestUtils.ServiceFactories[serviceType]
-                                   .GetServiceWithExpiry(10);
+                                   .GetServiceWithExpiry(10, (IAltchaCancellableChallengeStore)null);
             var challenge = service.Generate();
             var solver = GetDefaultSolver();
             _clock.SetOffsetInSeconds(30);
@@ -231,7 +231,7 @@ namespace Ixnas.AltchaNet.Tests
             const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.NoError;
 
             var service = TestUtils.ServiceFactories[serviceType]
-                                   .GetServiceWithExpiry(10);
+                                   .GetServiceWithExpiry(10, (IAltchaCancellableChallengeStore)null);
             var challenge = service.Generate();
             var solver = GetExpiryIgnoringSolver();
             _clock.SetOffsetInSeconds(30);

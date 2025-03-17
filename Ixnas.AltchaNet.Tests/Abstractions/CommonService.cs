@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Tests.Simulations;
@@ -25,7 +26,12 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
                                            IAltchaChallengeStore store = null,
                                            Clock clock = null);
 
+        CommonService GetServiceWithExpiry(int expiryInSeconds,
+                                           IAltchaCancellableChallengeStore store = null,
+                                           Clock clock = null);
+
         CommonService GetServiceWithStoreFactory(Func<IAltchaChallengeStore> storeFactory);
+        CommonService GetServiceWithStoreFactory(Func<IAltchaCancellableChallengeStore> storeFactory);
     }
 
     internal interface CommonService
@@ -34,6 +40,10 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
 
         Task<AltchaValidationResult> Validate(AltchaResponseSet altcha,
                                               CommonServiceValidationMethod commonServiceValidationMethod);
+
+        Task<AltchaValidationResult> Validate(AltchaResponseSet altcha,
+                                              CommonServiceValidationMethod commonServiceValidationMethod,
+                                              CancellationToken cancellationToken);
     }
 
     internal class CommonDefaultServiceFactory : CommonServiceFactory
@@ -72,7 +82,41 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
             return new CommonDefaultService(service);
         }
 
+        public CommonService GetServiceWithExpiry(int expiryInSeconds,
+                                                  IAltchaCancellableChallengeStore store = null,
+                                                  Clock clock = null)
+        {
+            var key = TestUtils.GetKey();
+            var builder = Altcha.CreateServiceBuilder()
+                                .UseSha256(key)
+                                .SetComplexity(1, 3)
+                                .SetExpiryInSeconds(expiryInSeconds);
+
+            // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
+            if (store != null)
+                builder = builder.UseStore(store);
+            else
+                builder = builder.UseInMemoryStore();
+
+            if (clock != null)
+                builder = builder.UseClock(clock);
+
+            var service = builder.Build();
+            return new CommonDefaultService(service);
+        }
+
         public CommonService GetServiceWithStoreFactory(Func<IAltchaChallengeStore> storeFactory)
+        {
+            var key = TestUtils.GetKey();
+            var service = Altcha.CreateServiceBuilder()
+                                .SetComplexity(1, 3)
+                                .UseSha256(key)
+                                .UseStore(storeFactory)
+                                .Build();
+            return new CommonDefaultService(service);
+        }
+
+        public CommonService GetServiceWithStoreFactory(Func<IAltchaCancellableChallengeStore> storeFactory)
         {
             var key = TestUtils.GetKey();
             var service = Altcha.CreateServiceBuilder()
@@ -118,7 +162,39 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
             return new CommonApiService(service, simulation, expiryInSeconds);
         }
 
+        public CommonService GetServiceWithExpiry(int expiryInSeconds,
+                                                  IAltchaCancellableChallengeStore store = null,
+                                                  Clock clock = null)
+        {
+            var simulation = new AltchaApiSimulation(TestUtils.GetApiSecret());
+            var builder = Altcha.CreateApiServiceBuilder()
+                                .UseInMemoryStore()
+                                .UseApiSecret(TestUtils.GetApiSecret());
+
+            // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
+            if (store != null)
+                builder = builder.UseStore(store);
+            else
+                builder = builder.UseInMemoryStore();
+
+            if (clock != null)
+                builder = builder.UseClock(clock);
+
+            var service = builder.Build();
+            return new CommonApiService(service, simulation, expiryInSeconds);
+        }
+
         public CommonService GetServiceWithStoreFactory(Func<IAltchaChallengeStore> storeFactory)
+        {
+            var simulation = new AltchaApiSimulation(TestUtils.GetApiSecret());
+            var service = Altcha.CreateApiServiceBuilder()
+                                .UseStore(storeFactory)
+                                .UseApiSecret(TestUtils.GetApiSecret())
+                                .Build();
+            return new CommonApiService(service, simulation);
+        }
+
+        public CommonService GetServiceWithStoreFactory(Func<IAltchaCancellableChallengeStore> storeFactory)
         {
             var simulation = new AltchaApiSimulation(TestUtils.GetApiSecret());
             var service = Altcha.CreateApiServiceBuilder()
@@ -163,6 +239,22 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
                     throw new InvalidOperationException();
             }
         }
+
+        public Task<AltchaValidationResult> Validate(AltchaResponseSet altcha,
+                                                     CommonServiceValidationMethod
+                                                         commonServiceValidationMethod,
+                                                     CancellationToken cancellationToken)
+        {
+            switch (commonServiceValidationMethod)
+            {
+                case CommonServiceValidationMethod.Base64:
+                    return _service.Validate(altcha.Base64, cancellationToken);
+                case CommonServiceValidationMethod.Object:
+                    return _service.Validate(altcha.Object, cancellationToken);
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
     }
 
     internal class CommonDefaultService : CommonService
@@ -189,6 +281,22 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
                     return _service.Validate(altcha.Base64);
                 case CommonServiceValidationMethod.Object:
                     return _service.Validate(altcha.Object);
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
+        public Task<AltchaValidationResult> Validate(AltchaResponseSet altcha,
+                                                     CommonServiceValidationMethod
+                                                         commonServiceValidationMethod,
+                                                     CancellationToken cancellationToken)
+        {
+            switch (commonServiceValidationMethod)
+            {
+                case CommonServiceValidationMethod.Base64:
+                    return _service.Validate(altcha.Base64, cancellationToken);
+                case CommonServiceValidationMethod.Object:
+                    return _service.Validate(altcha.Object, cancellationToken);
                 default:
                     throw new InvalidOperationException();
             }

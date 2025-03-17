@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal.Common.Serialization;
@@ -11,9 +12,9 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
     {
         private readonly AltchaResponseParser _altchaResponseParser;
         private readonly JsonSerializer _serializer;
-        private readonly Func<IAltchaChallengeStore> _storeFactory;
+        private readonly Func<IAltchaCancellableChallengeStore> _storeFactory;
 
-        public ResponseValidator(Func<IAltchaChallengeStore> storeFactory,
+        public ResponseValidator(Func<IAltchaCancellableChallengeStore> storeFactory,
                                  AltchaResponseParser altchaResponseParser,
                                  JsonSerializer serializer)
         {
@@ -22,7 +23,8 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
             _serializer = serializer;
         }
 
-        public async Task<AltchaValidationResult> Validate(string altchaBase64)
+        public async Task<AltchaValidationResult> Validate(string altchaBase64,
+                                                           CancellationToken cancellationToken)
         {
             Guard.NotNullOrWhitespace(altchaBase64);
 
@@ -30,37 +32,38 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
             if (!altchaParsedResult.Success)
                 return altchaParsedResult.Error.ToValidationResult();
 
-            return await Validate(altchaParsedResult.Value);
+            return await Validate(altchaParsedResult.Value, cancellationToken);
         }
 
-        public async Task<AltchaValidationResult> Validate(AltchaResponse altchaResponse)
+        public async Task<AltchaValidationResult> Validate(AltchaResponse altchaResponse,
+                                                           CancellationToken cancellationToken)
         {
             Guard.NotNull(altchaResponse);
 
             var store = _storeFactory();
             Guard.NotNull<MissingStoreException>(store);
 
-            var validationResult = await IsValidResponse(altchaResponse, store);
+            var validationResult = await IsValidResponse(altchaResponse, store, cancellationToken);
             if (!validationResult.Success)
                 return validationResult.Error.ToValidationResult();
 
             var altcha = validationResult.Value;
-            await store.Store(altcha.Challenge, altcha.ExpiryUtc);
+            await store.Store(altcha.Challenge, altcha.ExpiryUtc, cancellationToken);
 
             return Error.Create(ErrorCode.NoError)
                         .ToValidationResult();
         }
 
-        private async Task<Result<Validation.AltchaResponse>> IsValidResponse(
-            AltchaResponse altchaResponse,
-            IAltchaChallengeStore store)
+        private async Task<Result<Validation.AltchaResponse>> IsValidResponse(AltchaResponse altchaResponse,
+            IAltchaCancellableChallengeStore store,
+            CancellationToken cancellationToken)
         {
             var parseResult = _altchaResponseParser.Parse(altchaResponse);
             if (!parseResult.Success)
                 return Result<Validation.AltchaResponse>.Fail(parseResult);
 
             var altcha = parseResult.Value;
-            var exists = await store.Exists(altcha.Challenge);
+            var exists = await store.Exists(altcha.Challenge, cancellationToken);
             if (exists)
                 return Result<Validation.AltchaResponse>.Fail(ErrorCode.PreviouslyVerified);
 

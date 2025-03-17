@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Ixnas.AltchaNet.Debug;
@@ -50,12 +51,12 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
         private readonly double _maxSpamFilterScore;
         private readonly JsonSerializer _serializer;
         private readonly SignatureParser _signatureParser;
-        private readonly Func<IAltchaChallengeStore> _storeFactory;
+        private readonly Func<IAltchaCancellableChallengeStore> _storeFactory;
 
         public SpamFilterValidator(JsonSerializer serializer,
                                    CryptoAlgorithm cryptoAlgorithm,
                                    Clock clock,
-                                   Func<IAltchaChallengeStore> storeFactory,
+                                   Func<IAltchaCancellableChallengeStore> storeFactory,
                                    SignatureParser signatureParser,
                                    double maxSpamFilterScore)
         {
@@ -69,21 +70,22 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
 
         public async Task<AltchaSpamFilteredValidationResult> ValidateSpamFilteredForm<T>(
             T form,
-            Expression<Func<T, string>> altchaSelector)
+            Expression<Func<T, string>> altchaSelector,
+            CancellationToken cancellationToken)
         {
             Guard.NotNull(form);
 
             var store = _storeFactory();
             Guard.NotNull<MissingStoreException>(store);
 
-            var validationResult = await Validate(form, altchaSelector, store);
+            var validationResult = await Validate(form, altchaSelector, store, cancellationToken);
             if (!validationResult.Success)
                 return validationResult.Error.ToSpamFilteredValidationResult(false);
 
             var altcha = validationResult.Value.Altcha;
             var verificationData = validationResult.Value.VerificationData;
 
-            await store.Store(altcha.VerificationData, verificationData.ExpiryUtc);
+            await store.Store(altcha.VerificationData, verificationData.ExpiryUtc, cancellationToken);
 
             if (!PassesSpamFilter(verificationData))
                 return Error.Create(ErrorCode.NoError)
@@ -94,17 +96,17 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
         }
 
         private async Task<Result<(SpamFilteredAltcha Altcha, SpamFilterVerificationData VerificationData)>>
-            Validate<T>(
-                T form,
-                Expression<Func<T, string>> altchaSelector,
-                IAltchaChallengeStore store)
+            Validate<T>(T form,
+                        Expression<Func<T, string>> altchaSelector,
+                        IAltchaCancellableChallengeStore store,
+                        CancellationToken cancellationToken)
         {
             var parsedForm = ParseForm(form, altchaSelector);
             return (await new Railway<SpamFilteredAltcha>(DeserializeAltcha(parsedForm.Altcha))
                           .Then(AlgorithmMatches)
                           .Then(TryParseSignature)
                           .Then(PayloadIsValid)
-                          .ThenAsync(altcha => ChallengeIsNew(store, altcha)))
+                          .ThenAsync(altcha => ChallengeIsNew(store, altcha, cancellationToken)))
                    .Then(ParseVerificationData)
                    .Then(CheckExpiry)
                    .Then(prev => CheckFormFields(parsedForm, prev.Altcha, prev.VerificationData))
@@ -176,10 +178,12 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             return Result<SpamFilteredAltcha>.Ok(altcha);
         }
 
-        private async static Task<Result<SpamFilteredAltcha>> ChallengeIsNew(IAltchaChallengeStore store,
-            SpamFilteredAltcha altcha)
+        private async static Task<Result<SpamFilteredAltcha>> ChallengeIsNew(
+            IAltchaCancellableChallengeStore store,
+            SpamFilteredAltcha altcha,
+            CancellationToken cancellationToken)
         {
-            var exists = await store.Exists(altcha.VerificationData);
+            var exists = await store.Exists(altcha.VerificationData, cancellationToken);
             if (exists)
                 return Result<SpamFilteredAltcha>.Fail(ErrorCode.PreviouslyVerified);
             return Result<SpamFilteredAltcha>.Ok(altcha);

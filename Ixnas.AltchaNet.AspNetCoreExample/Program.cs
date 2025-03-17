@@ -18,10 +18,10 @@ sqliteConnection.Open();
 // Add challenge store.
 builder.Services.AddDbContext<ExampleDbContext>(options =>
                                                     options.UseSqlite(sqliteConnection));
-builder.Services.AddScoped<IAltchaChallengeStore, AltchaChallengeStore>();
+builder.Services.AddScoped<IAltchaCancellableChallengeStore, AltchaChallengeStore>();
 
 // Add HttpClient for machine-to-machine challenges (ignoring SSL issues for this example).
-builder.Services.AddHttpClient(Options.DefaultName, c => { })
+builder.Services.AddHttpClient(Options.DefaultName, _ => { })
        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
        {
            ClientCertificateOptions = ClientCertificateOption.Manual,
@@ -32,12 +32,12 @@ builder.Services.AddHttpClient(Options.DefaultName, c => { })
 // Add Altcha services.
 builder.Services.AddScoped(sp => Altcha.CreateServiceBuilder()
                                        .UseSha256(selfHostedKey)
-                                       .UseStore(sp.GetService<IAltchaChallengeStore>)
+                                       .UseStore(sp.GetService<IAltchaCancellableChallengeStore>)
                                        .SetExpiryInSeconds(5)
                                        .Build());
 builder.Services.AddScoped(sp => Altcha.CreateApiServiceBuilder()
                                        .UseApiSecret(apiSecret)
-                                       .UseStore(sp.GetService<IAltchaChallengeStore>)
+                                       .UseStore(sp.GetService<IAltchaCancellableChallengeStore>)
                                        .Build());
 builder.Services.AddScoped(_ => Altcha.CreateSolverBuilder()
                                       .Build());
