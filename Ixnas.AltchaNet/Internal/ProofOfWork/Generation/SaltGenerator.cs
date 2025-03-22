@@ -7,19 +7,20 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Generation
     internal class SaltGenerator
     {
         private readonly Clock _clock;
-        private readonly int _expiryInSeconds;
+        private readonly AltchaExpiry _expiry;
 
         public SaltGenerator(Clock clock,
-                             int expiryInSeconds)
+                             AltchaExpiry expiry)
         {
             _clock = clock;
-            _expiryInSeconds = expiryInSeconds;
+            _expiry = expiry;
         }
 
-        public Salt Generate()
+        public Salt Generate(AltchaExpiry? expiryOverride)
         {
+            var expiry = expiryOverride ?? _expiry;
             var expiryUtc = _clock.UtcNow
-                                  .AddSeconds(_expiryInSeconds);
+                                  .AddSeconds(expiry.Seconds);
             var bytes = new byte[12];
 
             using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())

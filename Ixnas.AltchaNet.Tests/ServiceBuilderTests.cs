@@ -7,6 +7,12 @@ namespace Ixnas.AltchaNet.Tests
 {
     public class ServiceBuilderTests
     {
+        public enum SettingParameter
+        {
+            Primitives,
+            Struct
+        }
+
         private readonly AltchaServiceBuilder _builder = Altcha.CreateServiceBuilder();
 
         [Fact]
@@ -144,47 +150,73 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
-        [InlineData(-10, 10)]
-        [InlineData(10, -10)]
-        [InlineData(10, 5)]
+        [InlineData(-10, 10, SettingParameter.Primitives)]
+        [InlineData(10, -10, SettingParameter.Primitives)]
+        [InlineData(10, 5, SettingParameter.Primitives)]
+        [InlineData(-10, 10, SettingParameter.Struct)]
+        [InlineData(10, -10, SettingParameter.Struct)]
+        [InlineData(10, 5, SettingParameter.Struct)]
         public void GivenMinimumAndMaximumAreInvalid_WhenSetComplexityCalled_ThenThrowException(
             int min,
-            int max)
+            int max,
+            SettingParameter parameter)
         {
             var key = TestUtils.GetKey();
             var builder = _builder.UseInMemoryStore()
                                   .UseSha256(key);
 
-            Assert.Throws<InvalidComplexityException>(() => builder.SetComplexity(min, max));
+            Assert.Throws<InvalidComplexityException>(() => SetComplexityWithParameter(builder,
+                                                               min,
+                                                               max,
+                                                               parameter));
         }
 
         [Theory]
-        [InlineData(0, 0)]
-        [InlineData(10, 10)]
-        [InlineData(10, 50)]
-        public void GivenComplexityIsValid_WhenSetComplexityCalled_ThenReturnBuilder(int min, int max)
+        [InlineData(0, 0, SettingParameter.Primitives)]
+        [InlineData(10, 10, SettingParameter.Primitives)]
+        [InlineData(10, 50, SettingParameter.Primitives)]
+        [InlineData(0, 0, SettingParameter.Struct)]
+        [InlineData(10, 10, SettingParameter.Struct)]
+        [InlineData(10, 50, SettingParameter.Struct)]
+        public void GivenComplexityIsValid_WhenSetComplexityCalled_ThenReturnBuilder(
+            int min,
+            int max,
+            SettingParameter parameter)
         {
             var key = TestUtils.GetKey();
             var builder = _builder.UseInMemoryStore()
-                                  .UseSha256(key)
-                                  .SetComplexity(min, max);
+                                  .UseSha256(key);
+            builder = SetComplexityWithParameter(builder,
+                                                 min,
+                                                 max,
+                                                 parameter);
             Assert.NotNull(builder);
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(-10)]
-        public void GivenExpiryIsInvalid_WhenSetExpiryInSecondsCalled_ThenThrowException(int expiryInSeconds)
+        [InlineData(0, SettingParameter.Primitives)]
+        [InlineData(-10, SettingParameter.Primitives)]
+        [InlineData(0, SettingParameter.Struct)]
+        [InlineData(-10, SettingParameter.Struct)]
+        public void GivenExpiryIsInvalid_WhenSetExpiryInSecondsCalled_ThenThrowException(
+            int expiryInSeconds,
+            SettingParameter parameter)
         {
-            Assert.Throws<InvalidExpiryException>(() => _builder.SetExpiryInSeconds(expiryInSeconds));
+            Assert.Throws<InvalidExpiryException>(() => SetExpiryWithParameter(Altcha.CreateServiceBuilder(),
+                                                           expiryInSeconds,
+                                                           parameter));
         }
 
         [Theory]
-        [InlineData(1)]
-        [InlineData(50)]
-        public void GivenExpiryIsValid_WhenSetExpiryInSecondsCalled_ThenReturnBuilder(int expiryInSeconds)
+        [InlineData(1, SettingParameter.Primitives)]
+        [InlineData(50, SettingParameter.Primitives)]
+        [InlineData(1, SettingParameter.Struct)]
+        [InlineData(50, SettingParameter.Struct)]
+        public void GivenExpiryIsValid_WhenSetExpiryInSecondsCalled_ThenReturnBuilder(
+            int expiryInSeconds,
+            SettingParameter parameter)
         {
-            var builder = _builder.SetExpiryInSeconds(expiryInSeconds);
+            var builder = SetExpiryWithParameter(Altcha.CreateServiceBuilder(), expiryInSeconds, parameter);
             Assert.NotNull(builder);
         }
 
@@ -230,6 +262,39 @@ namespace Ixnas.AltchaNet.Tests
 
             var builder9 = builder8.UseStore(() => (IAltchaCancellableChallengeStore)store);
             Assert.NotEqual(builder8, builder9);
+        }
+
+        private static AltchaServiceBuilder SetComplexityWithParameter(
+            AltchaServiceBuilder builder,
+            int min,
+            int max,
+            SettingParameter parameter)
+        {
+            switch (parameter)
+            {
+                case SettingParameter.Primitives:
+                    return builder.SetComplexity(min, max);
+                case SettingParameter.Struct:
+                    return builder.SetComplexity(new AltchaComplexity(min, max));
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
+        private static AltchaServiceBuilder SetExpiryWithParameter(
+            AltchaServiceBuilder builder,
+            int expiryInSeconds,
+            SettingParameter parameter)
+        {
+            switch (parameter)
+            {
+                case SettingParameter.Primitives:
+                    return builder.SetExpiryInSeconds(expiryInSeconds);
+                case SettingParameter.Struct:
+                    return builder.SetExpiry(AltchaExpiry.FromSeconds(expiryInSeconds));
+                default:
+                    throw new InvalidOperationException();
+            }
         }
     }
 }

@@ -20,10 +20,10 @@ namespace Ixnas.AltchaNet
     public sealed class AltchaServiceBuilder
     {
         private readonly Clock _clock = new DefaultClock();
-        private readonly int _expiryInSeconds = Defaults.ExpiryInSeconds;
+        private readonly AltchaComplexity _complexity =
+            new AltchaComplexity(Defaults.ComplexityMin, Defaults.ComplexityMax);
+        private readonly AltchaExpiry _expiry = AltchaExpiry.FromSeconds(Defaults.ExpiryInSeconds);
         private readonly byte[] _key;
-        private readonly int _max = Defaults.ComplexityMax;
-        private readonly int _min = Defaults.ComplexityMin;
         private readonly Func<IAltchaCancellableChallengeStore> _storeFactory;
         private readonly bool _useInMemoryStore;
 
@@ -34,17 +34,15 @@ namespace Ixnas.AltchaNet
         private AltchaServiceBuilder(Func<IAltchaCancellableChallengeStore> storeFactory,
                                      Clock clock,
                                      byte[] key,
-                                     int min,
-                                     int max,
-                                     int expiryInSeconds,
+                                     AltchaComplexity complexity,
+                                     AltchaExpiry expiry,
                                      bool useInMemoryStore)
         {
             _storeFactory = storeFactory;
             _clock = clock;
             _key = key;
-            _min = min;
-            _max = max;
-            _expiryInSeconds = expiryInSeconds;
+            _complexity = complexity;
+            _expiry = expiry;
             _useInMemoryStore = useInMemoryStore;
         }
 
@@ -62,10 +60,10 @@ namespace Ixnas.AltchaNet
             var inMemoryStoreWrapped = new ChallengeStoreAdapter(inMemoryStore);
             var storeFactory = _storeFactory ?? (() => inMemoryStoreWrapped);
             var serializer = new SystemTextJsonSerializer();
-            var secretNumberGenerator = new RandomNumberGenerator(_min, _max);
+            var secretNumberGenerator = new RandomNumberGenerator(_complexity);
             var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
             var saltGenerator = new SaltGenerator(_clock,
-                                                  _expiryInSeconds);
+                                                  _expiry);
             var saltParser = new SaltParser(_clock);
             var payloadToBytesConverter =
                 new SelfHostedPayloadConverter();
@@ -104,9 +102,8 @@ namespace Ixnas.AltchaNet
             return new AltchaServiceBuilder(() => new ChallengeStoreAdapter(store),
                                             _clock,
                                             _key,
-                                            _min,
-                                            _max,
-                                            _expiryInSeconds,
+                                            _complexity,
+                                            _expiry,
                                             _useInMemoryStore);
         }
 
@@ -121,9 +118,8 @@ namespace Ixnas.AltchaNet
             return new AltchaServiceBuilder(() => store,
                                             _clock,
                                             _key,
-                                            _min,
-                                            _max,
-                                            _expiryInSeconds,
+                                            _complexity,
+                                            _expiry,
                                             _useInMemoryStore);
         }
 
@@ -139,9 +135,8 @@ namespace Ixnas.AltchaNet
             return new AltchaServiceBuilder(() => new ChallengeStoreAdapter(storeFactory()),
                                             _clock,
                                             _key,
-                                            _min,
-                                            _max,
-                                            _expiryInSeconds,
+                                            _complexity,
+                                            _expiry,
                                             _useInMemoryStore);
         }
 
@@ -157,9 +152,8 @@ namespace Ixnas.AltchaNet
             return new AltchaServiceBuilder(storeFactory,
                                             _clock,
                                             _key,
-                                            _min,
-                                            _max,
-                                            _expiryInSeconds,
+                                            _complexity,
+                                            _expiry,
                                             _useInMemoryStore);
         }
 
@@ -176,9 +170,8 @@ namespace Ixnas.AltchaNet
             return new AltchaServiceBuilder(_storeFactory,
                                             _clock,
                                             key,
-                                            _min,
-                                            _max,
-                                            _expiryInSeconds,
+                                            _complexity,
+                                            _expiry,
                                             _useInMemoryStore);
         }
 
@@ -192,10 +185,25 @@ namespace Ixnas.AltchaNet
             return new AltchaServiceBuilder(null,
                                             _clock,
                                             _key,
-                                            _min,
-                                            _max,
-                                            _expiryInSeconds,
+                                            _complexity,
+                                            _expiry,
                                             true);
+        }
+
+        /// <summary>
+        ///     (Optional) Overrides the default complexity to tweak the amount of computational effort a client has to put in. See
+        ///     https://altcha.org/docs/complexity/ for more information
+        /// </summary>
+        /// <param name="complexity">Complexity range (default 50,000 - 100,000)</param>
+        /// <returns>A new instance of the builder with the updated configuration.</returns>
+        public AltchaServiceBuilder SetComplexity(AltchaComplexity complexity)
+        {
+            return new AltchaServiceBuilder(_storeFactory,
+                                            _clock,
+                                            _key,
+                                            complexity,
+                                            _expiry,
+                                            _useInMemoryStore);
         }
 
         /// <summary>
@@ -207,14 +215,22 @@ namespace Ixnas.AltchaNet
         /// <returns>A new instance of the builder with the updated configuration.</returns>
         public AltchaServiceBuilder SetComplexity(int min, int max)
         {
-            if (min < 0 || max < 0 || min > max)
-                throw new InvalidComplexityException();
+            var complexity = new AltchaComplexity(min, max);
+            return SetComplexity(complexity);
+        }
+
+        /// <summary>
+        ///     (Optional) Overrides the default time it takes for a challenge to expire.
+        /// </summary>
+        /// <param name="expiry">Expiry time (default 120 seconds)</param>
+        /// <returns>A new instance of the builder with the updated configuration.</returns>
+        public AltchaServiceBuilder SetExpiry(AltchaExpiry expiry)
+        {
             return new AltchaServiceBuilder(_storeFactory,
                                             _clock,
                                             _key,
-                                            min,
-                                            max,
-                                            _expiryInSeconds,
+                                            _complexity,
+                                            expiry,
                                             _useInMemoryStore);
         }
 
@@ -225,15 +241,8 @@ namespace Ixnas.AltchaNet
         /// <returns>A new instance of the builder with the updated configuration.</returns>
         public AltchaServiceBuilder SetExpiryInSeconds(int expiryInSeconds)
         {
-            if (expiryInSeconds < 1)
-                throw new InvalidExpiryException();
-            return new AltchaServiceBuilder(_storeFactory,
-                                            _clock,
-                                            _key,
-                                            _min,
-                                            _max,
-                                            expiryInSeconds,
-                                            _useInMemoryStore);
+            var expiry = AltchaExpiry.FromSeconds(expiryInSeconds);
+            return SetExpiry(expiry);
         }
 
 #if DEBUG
@@ -248,9 +257,8 @@ namespace Ixnas.AltchaNet
             return new AltchaServiceBuilder(_storeFactory,
                                             clock,
                                             _key,
-                                            _min,
-                                            _max,
-                                            _expiryInSeconds,
+                                            _complexity,
+                                            _expiry,
                                             _useInMemoryStore);
         }
 #endif

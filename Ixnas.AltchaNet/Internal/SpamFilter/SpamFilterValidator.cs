@@ -78,7 +78,10 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             var store = _storeFactory();
             Guard.NotNull<MissingStoreException>(store);
 
-            var validationResult = await Validate(form, altchaSelector, store, cancellationToken);
+            var validationResult = await Validate(form,
+                                                  altchaSelector,
+                                                  store,
+                                                  cancellationToken);
             if (!validationResult.Success)
                 return validationResult.Error.ToSpamFilteredValidationResult(false);
 

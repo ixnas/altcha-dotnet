@@ -33,6 +33,6 @@ internal class AltchaChallengeStore : IAltchaCancellableChallengeStore
                      .VerifiedChallenges
                      .AnyAsync(storedChallenge =>
                                    storedChallenge.Challenge == challenge,
-                               cancellationToken: cancellationToken);
+                               cancellationToken);
     }
 }

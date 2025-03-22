@@ -1,4 +1,5 @@
 using Ixnas.AltchaNet.Internal.Common.Cryptography;
+using Ixnas.AltchaNet.Internal.Common.Utilities;
 using Ixnas.AltchaNet.Internal.ProofOfWork.Common;
 using Ixnas.AltchaNet.Internal.ProofOfWork.Generation;
 
@@ -25,10 +26,12 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
             _signatureGenerator = signatureGenerator;
         }
 
-        public AltchaChallenge Generate()
+        public AltchaChallenge Generate(AltchaGenerateChallengeOverrides overrides)
         {
-            var salt = _saltGenerator.Generate();
-            var secretNumber = _randomNumberGenerator.Generate();
+            Guard.NotNull(overrides);
+
+            var salt = _saltGenerator.Generate(overrides.Expiry);
+            var secretNumber = _randomNumberGenerator.Generate(overrides.Complexity);
             var maxNumber = _randomNumberGenerator.Max;
             var challenge = _challengeStringGenerator.Generate(salt.Raw, secretNumber);
             var signature = _signatureGenerator.Generate(challenge)

@@ -24,7 +24,17 @@ namespace Ixnas.AltchaNet
         /// </summary>
         public AltchaChallenge Generate()
         {
-            return _challengeGenerator.Generate();
+            return _challengeGenerator.Generate(new AltchaGenerateChallengeOverrides());
+        }
+
+        /// <summary>
+        ///     Generates a new ALTCHA challenge.
+        /// </summary>
+        /// <param name="overrides">Configuration overrides applied to only this generation.</param>
+        /// <returns></returns>
+        public AltchaChallenge Generate(AltchaGenerateChallengeOverrides overrides)
+        {
+            return _challengeGenerator.Generate(overrides);
         }
 
         /// <summary>
