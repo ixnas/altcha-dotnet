@@ -93,10 +93,10 @@ using (var rng = RandomNumberGenerator.Create())
 
 The library requires a store implementation to store previously verified challenge responses.
 You can use anything persistent, like a database or a file.
-As long as it implements the `IAltchaChallengeStore` or the `IAltchaCancellableStore` interface, it will work.
+As long as it implements the `IAltchaChallengeStore` or the `IAltchaCancellableChallengeStore` interface, it will work.
 
-For persistent (I/O-bound) storage implementations, you should probably implement `IAltchaCancellableStore` which
-supports `CancellationToken`s.
+For persistent (I/O-bound) storage implementations, you should probably implement `IAltchaCancellableChallengeStore`
+which supports `CancellationToken`s.
 
 You can use `expiryUtc` to periodically remove expired challenges from your store.
 
@@ -158,7 +158,7 @@ strategy, for example.
 var overrides = new AltchaGenerateChallengeOverrides
 {
     Complexity = new AltchaComplexity(200000, 300000),
-    Expiry = new AltchaExpiry(300),
+    Expiry = AltchaExpiry.FromSeconds(300),
 };
 var challenge = altchaService.Generate(overrides);
 ```

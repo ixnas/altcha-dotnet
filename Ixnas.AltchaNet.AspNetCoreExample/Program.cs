@@ -33,7 +33,7 @@ builder.Services.AddHttpClient(Options.DefaultName, _ => { })
 builder.Services.AddScoped(sp => Altcha.CreateServiceBuilder()
                                        .UseSha256(selfHostedKey)
                                        .UseStore(sp.GetService<IAltchaCancellableChallengeStore>)
-                                       .SetExpiryInSeconds(5)
+                                       .SetExpiry(AltchaExpiry.FromSeconds(5))
                                        .Build());
 builder.Services.AddScoped(sp => Altcha.CreateApiServiceBuilder()
                                        .UseApiSecret(apiSecret)
