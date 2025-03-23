@@ -14,6 +14,7 @@ pipeline {
             returnStdout: true,
             script: '@git --no-pager tag --points-at HEAD'
         ).trim()}"""
+        MSBUILDDISABLENODEREUSE = "1"
     }
     stages {
         stage('Build') {
