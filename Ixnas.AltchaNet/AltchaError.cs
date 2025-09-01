@@ -1,3 +1,6 @@
+using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
+
 namespace Ixnas.AltchaNet
 {
     /// <summary>
@@ -8,10 +11,14 @@ namespace Ixnas.AltchaNet
         /// <summary>
         ///     Human-readable representation of the error.
         /// </summary>
+        [JsonPropertyName("message")]
+        [DataMember(Name = "message")]
         public string Message { get; set; }
         /// <summary>
         ///     Programmatic representation of the error.
         /// </summary>
+        [JsonPropertyName("code")]
+        [DataMember(Name = "code")]
         public AltchaValidationErrorCode Code { get; set; }
     }
 
@@ -23,25 +30,34 @@ namespace Ixnas.AltchaNet
         /// <summary>
         ///     Human-readable representation of the error.
         /// </summary>
+        [JsonPropertyName("message")]
+        [DataMember(Name = "message")]
         public string Message { get; set; }
         /// <summary>
         ///     Programmatic representation of the error.
         /// </summary>
+        [JsonPropertyName("code")]
+        [DataMember(Name = "code")]
         public AltchaSpamFilteredValidationErrorCode Code { get; set; }
     }
 
     /// <summary>
     ///     Solver error.
     /// </summary>
+    [DataContract]
     public sealed class AltchaSolverError
     {
         /// <summary>
         ///     Human-readable representation of the error.
         /// </summary>
+        [JsonPropertyName("message")]
+        [DataMember(Name = "message")]
         public string Message { get; set; }
         /// <summary>
         ///     Programmatic representation of the error.
         /// </summary>
+        [JsonPropertyName("code")]
+        [DataMember(Name = "code")]
         public AltchaSolverErrorCode Code { get; set; }
     }
 

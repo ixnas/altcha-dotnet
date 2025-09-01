@@ -1,5 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36310.24 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ixnas.AltchaNet", "Ixnas.AltchaNet\Ixnas.AltchaNet.csproj", "{A53D0849-02EA-44CA-B7CB-3D32DE4AD98F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ixnas.AltchaNet.Tests", "Ixnas.AltchaNet.Tests\Ixnas.AltchaNet.Tests.csproj", "{BD430AA7-C8ED-4134-86C8-C3EB1BC90AB6}"
@@ -19,10 +22,14 @@ Global
 		{BD430AA7-C8ED-4134-86C8-C3EB1BC90AB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BD430AA7-C8ED-4134-86C8-C3EB1BC90AB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD430AA7-C8ED-4134-86C8-C3EB1BC90AB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BD430AA7-C8ED-4134-86C8-C3EB1BC90AB6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{025EC1DC-DD54-4F1A-AC90-63D44DED01C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{025EC1DC-DD54-4F1A-AC90-63D44DED01C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{025EC1DC-DD54-4F1A-AC90-63D44DED01C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{025EC1DC-DD54-4F1A-AC90-63D44DED01C4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AA0844DF-32F3-49A7-BFBB-8AE29472AC3A}
 	EndGlobalSection
 EndGlobal

@@ -1,15 +1,20 @@
 using Ixnas.AltchaNet.Exceptions;
+using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Ixnas.AltchaNet
 {
     /// <summary>
     ///     Represents the time after which a generated challenge expires.
     /// </summary>
+    [DataContract]
     public readonly struct AltchaExpiry
     {
         /// <summary>
         ///     Expiry in seconds.
         /// </summary>
+        [JsonPropertyName("seconds")]
+        [DataMember(Name = "seconds")]
         public int Seconds { get; }
 
         private AltchaExpiry(int seconds)
