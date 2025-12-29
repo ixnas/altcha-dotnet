@@ -29,7 +29,7 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Generation
             }
 
             var randomHexString = ByteConverter.GetHexStringFromBytes(bytes);
-            var withExpiresParameter = $"{randomHexString}?expires={expiryUtc.ToUnixTimeSeconds()}";
+            var withExpiresParameter = $"{randomHexString}?expires={expiryUtc.ToUnixTimeSeconds()}&";
             return new Salt(_clock, withExpiresParameter, expiryUtc);
         }
     }

@@ -54,6 +54,14 @@ namespace Ixnas.AltchaNet.Tests
             Assert.False(string.IsNullOrEmpty(challenge.Algorithm));
         }
 
+        [Fact]
+        public void WhenCreateCalled_ThenSaltHasEndingDelimiter()
+        {
+            var service = GetDefaultService();
+            var challenge = service.Generate();
+            Assert.EndsWith("&", challenge.Salt);
+        }
+
         [Theory]
         [InlineData(0, 1)]
         [InlineData(10, 20)]
