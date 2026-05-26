@@ -28,20 +28,17 @@ public class HomeController : Controller
         public string ApiKey { get; set; } = string.Empty;
     }
 
-    private readonly AltchaApiService _apiService;
     private readonly IConfiguration _configuration;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly AltchaService _service;
     private readonly AltchaSolver _solver;
 
     public HomeController(AltchaService service,
-                          AltchaApiService apiService,
                           IConfiguration configuration,
                           AltchaSolver solver,
                           IHttpClientFactory httpClientFactory)
     {
         _service = service;
-        _apiService = apiService;
         _configuration = configuration;
         _solver = solver;
         _httpClientFactory = httpClientFactory;
@@ -68,21 +65,6 @@ public class HomeController : Controller
                                                                [FromForm] string altcha)
     {
         return await _service.Validate(altcha, cancellationToken);
-    }
-
-    [HttpPost("/verifyApiRegular")]
-    public async Task<AltchaValidationResult> VerifyApiRegular(CancellationToken cancellationToken,
-                                                               [FromForm] string altcha)
-    {
-        return await _apiService.Validate(altcha, cancellationToken);
-    }
-
-    [HttpPost("/verifyApiSpamFiltered")]
-    public async Task<AltchaSpamFilteredValidationResult> VerifyApiSpamFiltered(
-        CancellationToken cancellationToken,
-        [FromForm] SpamFilterFormModel spamFilterFormModel)
-    {
-        return await _apiService.ValidateSpamFilteredForm(spamFilterFormModel, cancellationToken);
     }
 
     [HttpGet("/simulateMachineToMachine")]

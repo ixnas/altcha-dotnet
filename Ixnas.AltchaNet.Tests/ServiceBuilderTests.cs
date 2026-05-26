@@ -7,10 +7,12 @@ namespace Ixnas.AltchaNet.Tests
 {
     public class ServiceBuilderTests
     {
+        // TODO add tests for configuration method
         public enum SettingParameter
         {
             Primitives,
-            Struct
+            Struct,
+            ConfigurationRecord
         }
 
         private readonly AltchaServiceBuilder _builder = Altcha.CreateServiceBuilder();
@@ -78,13 +80,25 @@ namespace Ixnas.AltchaNet.Tests
         [Fact]
         public void GivenKeyIsNull_WhenUseSha256Called_ThenThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => _builder.UseSha256(null));
+            Assert.Throws<ArgumentNullException>(() => _builder.UseSha256((byte[])null));
+        }
+
+        [Fact]
+        public void GivenKeyIsNull_WhenKeyIsConstructed_ThenThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() => AltchaKey.FromBytes(null));
         }
 
         [Fact]
         public void GivenKeyIsTooShort_WhenUseSha256Called_ThenThrowsInvalidKeyException()
         {
             Assert.Throws<InvalidKeyException>(() => _builder.UseSha256(new byte[] { 0, 1, 2 }));
+        }
+
+        [Fact]
+        public void GivenKeyIsTooShort_WhenKeyIsConstructed_ThenThrowsInvalidKeyException()
+        {
+            Assert.Throws<InvalidKeyException>(() => AltchaKey.FromBytes(new byte[] { 0, 1, 2 }));
         }
 
         [Fact]
@@ -156,6 +170,9 @@ namespace Ixnas.AltchaNet.Tests
         [InlineData(-10, 10, SettingParameter.Struct)]
         [InlineData(10, -10, SettingParameter.Struct)]
         [InlineData(10, 5, SettingParameter.Struct)]
+        [InlineData(-10, 10, SettingParameter.ConfigurationRecord)]
+        [InlineData(10, -10, SettingParameter.ConfigurationRecord)]
+        [InlineData(10, 5, SettingParameter.ConfigurationRecord)]
         public void GivenMinimumAndMaximumAreInvalid_WhenSetComplexityCalled_ThenThrowException(
             int min,
             int max,
@@ -172,12 +189,27 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
+        [InlineData(-10, 10)]
+        [InlineData(10, -10)]
+        [InlineData(10, 5)]
+        public void
+            GivenMinimumAndMaximumAreInvalid_WhenDeterministicComplexityIsConstructed_ThenThrowException(
+                int min,
+                int max)
+        {
+            Assert.Throws<InvalidComplexityException>(() => new AltchaComplexityCounterRange(min, max));
+        }
+
+        [Theory]
         [InlineData(0, 0, SettingParameter.Primitives)]
         [InlineData(10, 10, SettingParameter.Primitives)]
         [InlineData(10, 50, SettingParameter.Primitives)]
         [InlineData(0, 0, SettingParameter.Struct)]
         [InlineData(10, 10, SettingParameter.Struct)]
         [InlineData(10, 50, SettingParameter.Struct)]
+        [InlineData(0, 0, SettingParameter.ConfigurationRecord)]
+        [InlineData(10, 10, SettingParameter.ConfigurationRecord)]
+        [InlineData(10, 50, SettingParameter.ConfigurationRecord)]
         public void GivenComplexityIsValid_WhenSetComplexityCalled_ThenReturnBuilder(
             int min,
             int max,
@@ -198,6 +230,8 @@ namespace Ixnas.AltchaNet.Tests
         [InlineData(-10, SettingParameter.Primitives)]
         [InlineData(0, SettingParameter.Struct)]
         [InlineData(-10, SettingParameter.Struct)]
+        [InlineData(0, SettingParameter.ConfigurationRecord)]
+        [InlineData(-10, SettingParameter.ConfigurationRecord)]
         public void GivenExpiryIsInvalid_WhenSetExpiryInSecondsCalled_ThenThrowException(
             int expiryInSeconds,
             SettingParameter parameter)
@@ -208,10 +242,21 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
+        [InlineData(0)]
+        [InlineData(-10)]
+        public void GivenExpiryIsInvalid_WhenExpiryIsConstructed_ThenThrowException(
+            int expiryInSeconds)
+        {
+            Assert.Throws<InvalidExpiryException>(() => AltchaExpiry.FromSeconds(expiryInSeconds));
+        }
+
+        [Theory]
         [InlineData(1, SettingParameter.Primitives)]
         [InlineData(50, SettingParameter.Primitives)]
         [InlineData(1, SettingParameter.Struct)]
         [InlineData(50, SettingParameter.Struct)]
+        [InlineData(1, SettingParameter.ConfigurationRecord)]
+        [InlineData(50, SettingParameter.ConfigurationRecord)]
         public void GivenExpiryIsValid_WhenSetExpiryInSecondsCalled_ThenReturnBuilder(
             int expiryInSeconds,
             SettingParameter parameter)
@@ -219,6 +264,27 @@ namespace Ixnas.AltchaNet.Tests
             var builder = SetExpiryWithParameter(Altcha.CreateServiceBuilder(), expiryInSeconds, parameter);
             Assert.NotNull(builder);
         }
+
+        // Check required parameters for .NET Standard
+#if !NET8_0_OR_GREATER
+        [Fact]
+        public void GivenConfigurationIsMissingKey_WhenUseSha256Called_ThenThrowException()
+        {
+            Assert.Throws<MissingKeyException>(() => _builder.UseSha256(new AltchaSha256Configuration()
+            {
+                StoreFactory = () => new AltchaChallengeStoreFake(),
+            }));
+        }
+
+        [Fact]
+        public void GivenConfigurationIsMissingStoreFactory_WhenUseSha256Called_ThenThrowException()
+        {
+            Assert.Throws<MissingStoreException>(() => _builder.UseSha256(new AltchaSha256Configuration()
+            {
+                Key = AltchaKey.FromBytes(TestUtils.GetKey()),
+            }));
+        }
+#endif
 
         [Fact]
         public void GivenClockIsNull_WhenUseClockCalled_ThenThrowArgumentNullException()
@@ -276,6 +342,20 @@ namespace Ixnas.AltchaNet.Tests
                     return builder.SetComplexity(min, max);
                 case SettingParameter.Struct:
                     return builder.SetComplexity(new AltchaComplexity(min, max));
+                case SettingParameter.ConfigurationRecord:
+                {
+                    var store = new AltchaChallengeStoreFake();
+                    return builder.UseSha256(new AltchaSha256Configuration
+                    {
+                        Key = AltchaKey.FromBytes(TestUtils.GetKey()),
+                        StoreFactory = () => store,
+                        Complexity = new AltchaDeterministicComplexity
+                        {
+                            Counter = new AltchaComplexityCounterRange(min, max),
+                            Cost = 1
+                        }
+                    });
+                }
                 default:
                     throw new InvalidOperationException();
             }
@@ -292,6 +372,16 @@ namespace Ixnas.AltchaNet.Tests
                     return builder.SetExpiryInSeconds(expiryInSeconds);
                 case SettingParameter.Struct:
                     return builder.SetExpiry(AltchaExpiry.FromSeconds(expiryInSeconds));
+                case SettingParameter.ConfigurationRecord:
+                {
+                    var store = new AltchaChallengeStoreFake();
+                    return builder.UseSha256(new AltchaSha256Configuration
+                    {
+                        Key = AltchaKey.FromBytes(TestUtils.GetKey()),
+                        StoreFactory = () => store,
+                        Expiry = AltchaExpiry.FromSeconds(expiryInSeconds)
+                    });
+                }
                 default:
                     throw new InvalidOperationException();
             }

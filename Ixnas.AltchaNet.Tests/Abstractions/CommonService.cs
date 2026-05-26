@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Ixnas.AltchaNet.Debug;
+using Ixnas.AltchaNet.Tests.Fakes;
 using Ixnas.AltchaNet.Tests.Simulations;
 
 namespace Ixnas.AltchaNet.Tests.Abstractions
@@ -50,11 +51,19 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
     {
         public CommonService GetDefaultService()
         {
+            var store = new InMemoryStore(new ClockFake());
             var key = TestUtils.GetKey();
             var service = Altcha.CreateServiceBuilder()
-                                .SetComplexity(1, 3)
-                                .UseSha256(key)
-                                .UseInMemoryStore()
+                                .UseSha256(new AltchaSha256Configuration
+                                {
+                                    Key = AltchaKey.FromBytes(key),
+                                    StoreFactory = () => store,
+                                    Complexity = new AltchaDeterministicComplexity
+                                    {
+                                        Counter = new AltchaComplexityCounterRange(1, 3),
+                                        Cost = 1
+                                    }
+                                })
                                 .Build();
             return new CommonDefaultService(service);
         }
@@ -64,17 +73,22 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
                                                   Clock clock = null)
         {
             var key = TestUtils.GetKey();
+            var storeClock = clock ?? new ClockFake();
+            store = store ?? new InMemoryStore(storeClock);
             var builder = Altcha.CreateServiceBuilder()
-                                .UseSha256(key)
-                                .SetComplexity(1, 3)
-                                .SetExpiryInSeconds(expiryInSeconds);
+                                .UseSha256(new AltchaSha256Configuration
+                                {
+                                    Key = AltchaKey.FromBytes(key),
+                                    StoreFactory = () => store,
+                                    Expiry = AltchaExpiry.FromSeconds(expiryInSeconds),
+                                    Complexity = new AltchaDeterministicComplexity
+                                    {
+                                        Counter = new AltchaComplexityCounterRange(1, 3),
+                                        Cost = 1
+                                    }
+                                });
 
             // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
-            if (store != null)
-                builder = builder.UseStore(store);
-            else
-                builder = builder.UseInMemoryStore();
-
             if (clock != null)
                 builder = builder.UseClock(clock);
 
@@ -109,9 +123,16 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
         {
             var key = TestUtils.GetKey();
             var service = Altcha.CreateServiceBuilder()
-                                .SetComplexity(1, 3)
-                                .UseSha256(key)
-                                .UseStore(storeFactory)
+                                .UseSha256(new AltchaSha256Configuration
+                                {
+                                    Key = AltchaKey.FromBytes(key),
+                                    StoreFactory = storeFactory,
+                                    Complexity = new AltchaDeterministicComplexity
+                                    {
+                                        Counter = new AltchaComplexityCounterRange(1, 3),
+                                        Cost = 1
+                                    }
+                                })
                                 .Build();
             return new CommonDefaultService(service);
         }

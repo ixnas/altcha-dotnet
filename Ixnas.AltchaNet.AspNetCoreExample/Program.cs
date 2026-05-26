@@ -9,7 +9,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Read self-hosted key and API secret from appsettings.json
 var selfHostedKeyBase64 = builder.Configuration.GetValue<string>("SelfHostedKey");
 var selfHostedKey = Convert.FromBase64String(selfHostedKeyBase64!);
-var apiSecret = builder.Configuration.GetValue<string>("ApiSecret");
 
 // Initialize database using EF Core with SQLite in-memory.
 var sqliteConnection = new SqliteConnection("datasource=:memory:");
@@ -18,7 +17,7 @@ sqliteConnection.Open();
 // Add challenge store.
 builder.Services.AddDbContext<ExampleDbContext>(options =>
                                                     options.UseSqlite(sqliteConnection));
-builder.Services.AddScoped<IAltchaCancellableChallengeStore, AltchaChallengeStore>();
+builder.Services.AddScoped<IAltchaChallengeStore, AltchaChallengeStore>();
 
 // Add HttpClient for machine-to-machine challenges (ignoring SSL issues for this example).
 builder.Services.AddHttpClient(Options.DefaultName, _ => { })
@@ -31,13 +30,12 @@ builder.Services.AddHttpClient(Options.DefaultName, _ => { })
 
 // Add Altcha services.
 builder.Services.AddScoped(sp => Altcha.CreateServiceBuilder()
-                                       .UseSha256(selfHostedKey)
-                                       .UseStore(sp.GetService<IAltchaCancellableChallengeStore>)
-                                       .SetExpiry(AltchaExpiry.FromSeconds(5))
-                                       .Build());
-builder.Services.AddScoped(sp => Altcha.CreateApiServiceBuilder()
-                                       .UseApiSecret(apiSecret)
-                                       .UseStore(sp.GetService<IAltchaCancellableChallengeStore>)
+                                       .UseSha256(new AltchaSha256Configuration
+                                       {
+                                           Key = AltchaKey.FromBytes(selfHostedKey),
+                                           StoreFactory = sp.GetRequiredService<IAltchaChallengeStore>,
+                                           Expiry = AltchaExpiry.FromSeconds(5)
+                                       })
                                        .Build());
 builder.Services.AddScoped(_ => Altcha.CreateSolverBuilder()
                                       .Build());

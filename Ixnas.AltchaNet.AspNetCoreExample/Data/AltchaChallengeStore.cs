@@ -2,13 +2,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ixnas.AltchaNet.AspNetCoreExample.Data;
 
-internal class AltchaChallengeStore : IAltchaCancellableChallengeStore
+internal class AltchaChallengeStore : IAltchaChallengeStore
 {
     private readonly ExampleDbContext _dbContext;
 
     public AltchaChallengeStore(ExampleDbContext dbContext)
     {
         _dbContext = dbContext;
+    }
+
+    public async Task Store(string challenge, DateTimeOffset expiryUtc)
+    {
+        await Store(challenge, expiryUtc, CancellationToken.None);
     }
 
     public async Task Store(string challenge, DateTimeOffset expiryUtc, CancellationToken cancellationToken)
@@ -20,6 +25,11 @@ internal class AltchaChallengeStore : IAltchaCancellableChallengeStore
         };
         _dbContext.VerifiedChallenges.Add(verifiedChallenge);
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<bool> Exists(string challenge)
+    {
+        return await Exists(challenge, CancellationToken.None);
     }
 
     public async Task<bool> Exists(string challenge, CancellationToken cancellationToken)

@@ -17,12 +17,20 @@ namespace Ixnas.AltchaNet.Internal.Common.Utilities
 
         public Task Store(string challenge, DateTimeOffset expiryUtc, CancellationToken cancellationToken)
         {
+#if NET8_0_OR_GREATER
+            return _challengeStore.Store(challenge, expiryUtc, cancellationToken);
+#else
             return _challengeStore.Store(challenge, expiryUtc);
+#endif
         }
 
         public Task<bool> Exists(string challenge, CancellationToken cancellationToken)
         {
+#if NET8_0_OR_GREATER
+            return _challengeStore.Exists(challenge, cancellationToken);
+#else
             return _challengeStore.Exists(challenge);
+#endif
         }
     }
 }

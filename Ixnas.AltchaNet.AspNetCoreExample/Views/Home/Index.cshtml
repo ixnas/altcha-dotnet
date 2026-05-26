@@ -9,7 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
-    <script async defer src="https://cdn.jsdelivr.net/npm/altcha/dist/altcha.min.js" type="module"></script>
+    <script src=" https://cdn.jsdelivr.net/npm/altcha@3.0.10/dist/main/altcha.min.js "></script>
+    <link href=" https://cdn.jsdelivr.net/npm/altcha@3.0.10/dist/external/altcha.min.css " rel="stylesheet">
 </head>
 <body class="pt-4 pb-4">
 <div class="container">
@@ -24,7 +25,7 @@
                         <div class="card-body">
                             <h4 class="card-heading mb-3">Self-hosted</h4>
                             <form action="/verifySelfHosted" method="post">
-                                <altcha-widget challengeurl="/challengeSelfHosted"></altcha-widget>
+                                <altcha-widget challenge="/challengeSelfHosted"></altcha-widget>
                                 <br/>
                                 <button type="submit" class="btn btn-secondary">Submit</button>
                             </form>
@@ -41,33 +42,6 @@
                                 </altcha-widget>
                                 <br/>
                                 <button type="submit" class="btn btn-secondary">Submit</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <h4 class="card-heading mb-3">ALTCHA API - Spam filtered</h4>
-                            <form action="/verifyApiSpamFiltered" method="post">
-                                <div class="mb-3">
-                                    <label class="form-label" for="Email">E-mail</label>
-                                    <input class="form-control" id="Email" name="Email" type="text"/>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label" for="Something">Something</label>
-                                    <input class="form-control" id="Something" name="Something" type="text"/>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label" for="Text">Text</label>
-                                    <input class="form-control" id="Text" name="Text" type="text"/>
-                                </div>
-                                <altcha-widget
-                                    challengeurl="https://eu.altcha.org/api/v1/challenge?apiKey=@(Model.ApiKey)"
-                                    spamfilter>
-                                </altcha-widget>
-                                <br/>
-                                <button type="submit" class="btn btn-secondary">Post</button>
                             </form>
                         </div>
                     </div>

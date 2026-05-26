@@ -8,6 +8,9 @@ namespace Ixnas.AltchaNet
     ///     Represents a cancellable data source to store challenges that have been solved before.
     ///     Is used to prevent replay attacks.
     /// </summary>
+#if NET8_0_OR_GREATER
+    [Obsolete("Will be removed in the next major version. Make sure to implement IAltchaChallengeStore instead.")]
+#endif
     public interface IAltchaCancellableChallengeStore
     {
         /// <summary>

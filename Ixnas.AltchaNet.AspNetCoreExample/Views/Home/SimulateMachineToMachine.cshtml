@@ -10,8 +10,7 @@
             crossorigin="anonymous"></script>
     <script async defer src="https://cdn.jsdelivr.net/npm/altcha/dist/altcha.min.js" type="module"></script>
     <style>
-        .codebox
-        {
+        .codebox {
             margin-top: 0.375rem;
             border: 1px dashed #aaa;
         }
@@ -35,7 +34,7 @@
                                     Got challenge from remote server
                                     <pre class="codebox p-2">GET @Model.ChallengeUrl
 
-@Model.Challenge
+                                        @Model.Challenge
 </pre>
                                 </li>
                                 <li>
@@ -46,7 +45,7 @@
                                     Submitted form with ALTCHA to remote server
                                     <pre class="codebox p-2">POST @Model.ValidationUrl
 
-@Model.ValidationResult
+                                        @Model.ValidationResult
 </pre>
                                 </li>
                             </ol>

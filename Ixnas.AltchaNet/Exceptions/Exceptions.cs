@@ -59,6 +59,13 @@ namespace Ixnas.AltchaNet.Exceptions
     }
 
     /// <summary>
+    ///     Thrown when attempting to build an AltchaService without specifying the key to be used.
+    /// </summary>
+    public class MissingKeyException : AltchaException
+    {
+    }
+
+    /// <summary>
     ///     Thrown when attempting to set the maximum spam filter score to a negative or zero value.
     /// </summary>
     public class InvalidMaxSpamFilterScoreException : AltchaException
