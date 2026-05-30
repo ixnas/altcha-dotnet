@@ -7,18 +7,18 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Generation
     internal class RandomNumberGenerator
     {
         public int Max => _complexity.Max;
-        private readonly AltchaComplexity _complexity;
+        private readonly AltchaComplexityCounterRange _complexity;
 #if !NET8_0_OR_GREATER
         private readonly System.Security.Cryptography.RandomNumberGenerator _generator =
             System.Security.Cryptography.RandomNumberGenerator.Create();
 #endif
 
-        public RandomNumberGenerator(AltchaComplexity complexity)
+        public RandomNumberGenerator(AltchaComplexityCounterRange complexity)
         {
             _complexity = complexity;
         }
 
-        public int Generate(AltchaComplexity? complexityOverride)
+        public int Generate(AltchaComplexityCounterRange complexityOverride)
         {
             var complexity = complexityOverride ?? _complexity;
             var min = complexity.Min;

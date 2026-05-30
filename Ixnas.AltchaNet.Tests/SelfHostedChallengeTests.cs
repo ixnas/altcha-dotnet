@@ -9,6 +9,12 @@ namespace Ixnas.AltchaNet.Tests
 {
     public class SelfHostedChallengeTests
     {
+        public enum OverrideMethod
+        {
+            Deprecated,
+            ConfigurationRecord,
+        }
+
         private readonly ClockFake _clock = new ClockFake();
 
         [Fact]
@@ -75,12 +81,15 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
-        [InlineData(0, 1)]
-        [InlineData(10, 20)]
+        [InlineData(0, 1, OverrideMethod.Deprecated)]
+        [InlineData(10, 20, OverrideMethod.Deprecated)]
+        [InlineData(0, 1, OverrideMethod.ConfigurationRecord)]
+        [InlineData(10, 20, OverrideMethod.ConfigurationRecord)]
         public void
             GivenCustomComplexityWithOverrides_WhenCallingValidateMultipleTimes_ReturnsResultWithNumberInRange(
                 int min,
-                int max)
+                int max,
+                OverrideMethod overrideMethod)
         {
             const int initialMin = 100;
             const int initialMax = 110;
@@ -91,7 +100,9 @@ namespace Ixnas.AltchaNet.Tests
                 Complexity = new AltchaComplexity(min, max)
             };
 
-            TestComplexityWithinRange(min, max, () => service.Generate(overrides));
+            TestComplexityWithinRange(min,
+                                      max,
+                                      () => GenerateWithOverride(service, overrides, overrideMethod));
         }
 
         [Fact]
@@ -106,9 +117,12 @@ namespace Ixnas.AltchaNet.Tests
             TestComplexityInclusiveRange(min, max, () => service.Generate());
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(OverrideMethod.Deprecated)]
+        [InlineData(OverrideMethod.ConfigurationRecord)]
         public void
-            GivenCustomComplexityWithOverrides_WhenCallingValidateMultipleTimes_ReturnsResultWithNumberInclusiveRange()
+            GivenCustomComplexityWithOverrides_WhenCallingValidateMultipleTimes_ReturnsResultWithNumberInclusiveRange(
+                OverrideMethod overrideMethod)
         {
             const int initialMin = 100;
             const int initialMax = 102;
@@ -122,14 +136,19 @@ namespace Ixnas.AltchaNet.Tests
                 Complexity = new AltchaComplexity(min, max)
             };
 
-            TestComplexityInclusiveRange(min, max, () => service.Generate(overrides));
+            TestComplexityInclusiveRange(min,
+                                         max,
+                                         () => GenerateWithOverride(service, overrides, overrideMethod));
         }
 
         [Theory]
-        [InlineData(CommonServiceValidationMethod.Base64)]
-        [InlineData(CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceValidationMethod.Base64, OverrideMethod.Deprecated)]
+        [InlineData(CommonServiceValidationMethod.Object, OverrideMethod.Deprecated)]
+        [InlineData(CommonServiceValidationMethod.Base64, OverrideMethod.ConfigurationRecord)]
+        [InlineData(CommonServiceValidationMethod.Object, OverrideMethod.ConfigurationRecord)]
         public async Task GivenChallengeIsSolvedAfterExpiryOverride_WhenCallingValidate_ReturnsNegativeResult(
-            CommonServiceValidationMethod validationMethod)
+            CommonServiceValidationMethod validationMethod,
+            OverrideMethod overrideMethod)
         {
             const AltchaValidationErrorCode expectedErrorCode = AltchaValidationErrorCode.ChallengeExpired;
             const string expectedErrorString = "Challenge expired.";
@@ -139,7 +158,7 @@ namespace Ixnas.AltchaNet.Tests
             {
                 Expiry = AltchaExpiry.FromSeconds(5)
             };
-            var challenge = service.Generate(overrides);
+            var challenge = GenerateWithOverride(service, overrides, overrideMethod);
             _clock.SetOffsetInSeconds(10);
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
@@ -152,11 +171,14 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
-        [InlineData(CommonServiceValidationMethod.Base64)]
-        [InlineData(CommonServiceValidationMethod.Object)]
+        [InlineData(CommonServiceValidationMethod.Base64, OverrideMethod.Deprecated)]
+        [InlineData(CommonServiceValidationMethod.Object, OverrideMethod.Deprecated)]
+        [InlineData(CommonServiceValidationMethod.Base64, OverrideMethod.ConfigurationRecord)]
+        [InlineData(CommonServiceValidationMethod.Object, OverrideMethod.ConfigurationRecord)]
         public async Task
             GivenChallengeIsSolvedWithinExpiryOverride_WhenCallingValidate_ReturnsPositiveResult(
-                CommonServiceValidationMethod validationMethod)
+                CommonServiceValidationMethod validationMethod,
+                OverrideMethod overrideMethod)
         {
             const AltchaValidationErrorCode expectedErrorCode = AltchaValidationErrorCode.NoError;
             const string expectedErrorString = "";
@@ -166,7 +188,7 @@ namespace Ixnas.AltchaNet.Tests
             {
                 Expiry = AltchaExpiry.FromSeconds(30)
             };
-            var challenge = service.Generate(overrides);
+            var challenge = GenerateWithOverride(service, overrides, overrideMethod);
             _clock.SetOffsetInSeconds(10);
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
@@ -179,13 +201,73 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Fact]
+        public void GivenDeprecatedChallengeOverridesAreNull_WhenCallingGenerate_ThenThrowException()
+        {
+            var service = Altcha.CreateServiceBuilder()
+                                .UseInMemoryStore()
+                                .UseSha256(TestUtils.GetKey())
+                                .Build();
+            Assert.Throws<ArgumentNullException>(() =>
+                                                     service.Generate((AltchaGenerateChallengeOverrides)
+                                                                      null));
+        }
+
+        [Fact]
         public void GivenChallengeOverridesAreNull_WhenCallingGenerate_ThenThrowException()
         {
             var service = Altcha.CreateServiceBuilder()
                                 .UseInMemoryStore()
                                 .UseSha256(TestUtils.GetKey())
                                 .Build();
-            Assert.Throws<ArgumentNullException>(() => service.Generate(null));
+            Assert.Throws<ArgumentNullException>(() =>
+                                                     service.Generate((Func<AltchaSha256Configuration,
+                                                                          AltchaSha256Configuration>)null));
+        }
+
+        [Fact]
+        public void GivenChallengeOverridesReturnsNull_WhenCallingGenerate_ThenThrowException()
+        {
+            var service = Altcha.CreateServiceBuilder()
+                                .UseInMemoryStore()
+                                .UseSha256(TestUtils.GetKey())
+                                .Build();
+            Assert.Throws<ArgumentNullException>(() => service.Generate(_ => null));
+        }
+
+        [Theory]
+        [InlineData(CommonServiceValidationMethod.Base64)]
+        [InlineData(CommonServiceValidationMethod.Object)]
+        public async Task GivenChallengeOverridesIncludesKey_WhenCallingGenerate_UsesDifferentKey(CommonServiceValidationMethod validationMethod)
+        {
+            var store = new InMemoryStore(_clock);
+            var key1 = TestUtils.GetKey();
+            var key2 = TestUtils.GetKey();
+            key2[0] = 2;
+            var service1 = Altcha.CreateServiceBuilder()
+                                 .UseSha256(new AltchaSha256Configuration()
+                                 {
+                                     StoreFactory = () => store,
+                                     Key = AltchaKey.FromBytes(key1),
+                                 })
+                                 .Build();
+            var service2 = Altcha.CreateServiceBuilder()
+                                 .UseSha256(new AltchaSha256Configuration()
+                                 {
+                                     StoreFactory = () => store,
+                                     Key = AltchaKey.FromBytes(key2),
+                                 })
+                                 .Build();
+            
+            var challenge = GenerateWithOverride(service1, new AltchaGenerateChallengeOverrides(), OverrideMethod.ConfigurationRecord, AltchaKey.FromBytes(key2));
+            
+            var simulation = new AltchaFrontEndSimulation();
+            var result = simulation.Run(challenge);
+            
+            var validationResult1 = await ValidateWithMethod(service1, result.Altcha, validationMethod);
+            Assert.False(validationResult1.IsValid);
+            
+            var validationResult2 = await ValidateWithMethod(service2, result.Altcha, validationMethod);
+            Assert.True(validationResult2.IsValid);
         }
 
         private static void TestComplexityWithinRange(int min,
@@ -255,6 +337,58 @@ namespace Ixnas.AltchaNet.Tests
                          .SetExpiryInSeconds(expiry)
                          .UseInMemoryStore()
                          .Build();
+        }
+
+        private AltchaChallenge GenerateWithOverride(AltchaService service,
+                                                     AltchaGenerateChallengeOverrides overrides,
+                                                     OverrideMethod overrideMethod,
+                                                     AltchaKey altchaKeyOverride = null)
+        {
+            switch (overrideMethod)
+            {
+                case OverrideMethod.Deprecated:
+                    return service.Generate(overrides);
+                case OverrideMethod.ConfigurationRecord:
+#if NET8_0_OR_GREATER
+                    return service.Generate((configuration) => configuration with
+                    {
+                        Complexity = overrides.Complexity.HasValue
+                                         ? configuration.Complexity with
+                                         {
+                                             Counter =
+                                             new AltchaComplexityCounterRange(overrides.Complexity.Value.Min,
+                                                 overrides.Complexity.Value.Max),
+                                         }
+                                         : configuration.Complexity,
+                        Expiry = overrides.Expiry ?? configuration.Expiry,
+                        Key = altchaKeyOverride ?? configuration.Key,
+                    });
+#else
+                    return service.Generate((configuration) =>
+                    {
+                        if (overrides.Complexity.HasValue)
+                        {
+                            configuration.Complexity.Counter =
+                                new AltchaComplexityCounterRange(overrides.Complexity.Value.Min,
+                                                                 overrides.Complexity.Value.Max);
+                        }
+
+                        if (overrides.Expiry.HasValue)
+                        {
+                            configuration.Expiry = overrides.Expiry.Value;
+                        }
+
+                        if (altchaKeyOverride != null)
+                        {
+                            configuration.Key = altchaKeyOverride;
+                        }
+
+                        return configuration;
+                    });
+#endif
+                default:
+                    throw new InvalidOperationException();
+            }
         }
 
         private async static Task<AltchaValidationResult> ValidateWithMethod(

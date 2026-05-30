@@ -51,20 +51,23 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
         private readonly double _maxSpamFilterScore;
         private readonly JsonSerializer _serializer;
         private readonly SignatureParser _signatureParser;
-        private readonly Func<IAltchaCancellableChallengeStore> _storeFactory;
+        private readonly Func<ChallengeStoreAdapter> _storeFactory;
+        private readonly AltchaSha256Configuration _configuration;
 
         public SpamFilterValidator(JsonSerializer serializer,
                                    CryptoAlgorithm cryptoAlgorithm,
                                    Clock clock,
-                                   Func<IAltchaCancellableChallengeStore> storeFactory,
+                                   Func<ChallengeStoreAdapter> storeFactory,
                                    SignatureParser signatureParser,
-                                   double maxSpamFilterScore)
+                                   double maxSpamFilterScore,
+                                   AltchaSha256Configuration configuration)
         {
             _serializer = serializer;
             _cryptoAlgorithm = cryptoAlgorithm;
             _clock = clock;
             _storeFactory = storeFactory;
             _maxSpamFilterScore = maxSpamFilterScore;
+            _configuration = configuration;
             _signatureParser = signatureParser;
         }
 
@@ -76,7 +79,6 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
             Guard.NotNull(form);
 
             var store = _storeFactory();
-            Guard.NotNull<MissingStoreException>(store);
 
             var validationResult = await Validate(form,
                                                   altchaSelector,
@@ -101,7 +103,7 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
         private async Task<Result<(SpamFilteredAltcha Altcha, SpamFilterVerificationData VerificationData)>>
             Validate<T>(T form,
                         Expression<Func<T, string>> altchaSelector,
-                        IAltchaCancellableChallengeStore store,
+                        ChallengeStoreAdapter store,
                         CancellationToken cancellationToken)
         {
             var parsedForm = ParseForm(form, altchaSelector);
@@ -127,7 +129,7 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
         private Result<SpamFilteredAltcha> PayloadIsValid((SpamFilteredAltcha, Signature) parameters)
         {
             var (altcha, signature) = parameters;
-            var validationResult = signature.PayloadIsValid(altcha.VerificationData);
+            var validationResult = signature.PayloadIsValid(altcha.VerificationData, _configuration.Key);
             return Result<SpamFilteredAltcha>.From(validationResult, altcha);
         }
 
@@ -182,7 +184,7 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
         }
 
         private async static Task<Result<SpamFilteredAltcha>> ChallengeIsNew(
-            IAltchaCancellableChallengeStore store,
+            ChallengeStoreAdapter store,
             SpamFilteredAltcha altcha,
             CancellationToken cancellationToken)
         {

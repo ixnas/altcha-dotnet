@@ -18,7 +18,7 @@ namespace Ixnas.AltchaNet.Internal.Common.Cryptography
             _cryptoAlgorithm = cryptoAlgorithm;
         }
 
-        public Result PayloadIsValid(string payload)
+        public Result PayloadIsValid(string payload, AltchaKey key)
         {
             var error = Result.Fail(ErrorCode.PayloadDoesNotMatchSignature);
 
@@ -27,7 +27,7 @@ namespace Ixnas.AltchaNet.Internal.Common.Cryptography
                 return error;
 
             var payloadBytes = payloadBytesResult.Value;
-            var calculatedSignature = _cryptoAlgorithm.Sign(payloadBytes);
+            var calculatedSignature = _cryptoAlgorithm.Sign(payloadBytes, key);
 
             if (!_signatureBytes.SequenceEqual(calculatedSignature))
                 return error;

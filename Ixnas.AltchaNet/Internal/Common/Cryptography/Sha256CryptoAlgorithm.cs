@@ -4,13 +4,6 @@ namespace Ixnas.AltchaNet.Internal.Common.Cryptography
 {
     internal class Sha256CryptoAlgorithm : CryptoAlgorithm
     {
-        private readonly byte[] _key;
-
-        public Sha256CryptoAlgorithm(byte[] key)
-        {
-            _key = key;
-        }
-
         public string Name => "SHA-256";
 
         public byte[] Hash(byte[] bytes)
@@ -25,9 +18,9 @@ namespace Ixnas.AltchaNet.Internal.Common.Cryptography
 #endif
         }
 
-        public byte[] Sign(byte[] bytes)
+        public byte[] Sign(byte[] bytes, AltchaKey key)
         {
-            using (var sha = new HMACSHA256(_key))
+            using (var sha = new HMACSHA256(key.Bytes))
             {
                 return sha.ComputeHash(bytes);
             }

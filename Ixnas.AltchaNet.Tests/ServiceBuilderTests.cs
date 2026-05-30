@@ -7,7 +7,6 @@ namespace Ixnas.AltchaNet.Tests
 {
     public class ServiceBuilderTests
     {
-        // TODO add tests for configuration method
         public enum SettingParameter
         {
             Primitives,

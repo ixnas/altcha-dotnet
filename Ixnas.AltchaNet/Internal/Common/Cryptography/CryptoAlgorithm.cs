@@ -4,6 +4,6 @@
     {
         string Name { get; }
         byte[] Hash(byte[] bytes);
-        byte[] Sign(byte[] bytes);
+        byte[] Sign(byte[] bytes, AltchaKey key);
     }
 }

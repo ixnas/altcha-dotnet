@@ -140,20 +140,35 @@ The `challenge` object can be serialized to JSON for the client to use.
 Read [ALTCHA's documentation](https://altcha.org/docs/v2/widget-integration/#using-altcha-widget) on how to use such a
 JSON object.
 
-It's possible to override configuration options by passing an `AltchaGenerateChallengeOverrides` object.
+It's possible to override configuration options by passing an anonymous function to change the configuration.
 This can be useful when implementing a [dynamic complexity](https://altcha.org/docs/v2/complexity/#recommended-practices)
 strategy, for example.
 
 ```csharp
-var overrides = new AltchaGenerateChallengeOverrides
+// .NET 8 or newer
+var challenge = altchaService.Generate(configuration => configuration with
 {
-    Complexity = new AltchaComplexity(200000, 300000),
+    Complexity = configuration.Complexity with 
+    {
+        Counter = new AltchaComplexityCounterRange(200000, 300000),
+    },
     Expiry = AltchaExpiry.FromSeconds(300),
-};
-var challenge = altchaService.Generate(overrides);
+});
+
+// .NET Framework or .NET Standard
+var challenge = altchaService.Generate(configuration => 
+{
+    configuration.Complexity = new AltchaDeterministicComplexity()
+    {
+        Counter = new AltchaComplexityCounterRange(200000, 300000),
+        Cost = configuration.Complexity.Cost,
+    };
+    configuration.Expiry = AltchaExpiry.FromSeconds(300);
+    return configuration;
+})
 ```
 
-Only the properties that are set will affect the generation, and only for this single call.
+The updated configuration will be used for this single call only.
 
 #### Validating a response
 

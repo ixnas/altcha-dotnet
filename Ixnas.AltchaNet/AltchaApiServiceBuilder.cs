@@ -24,7 +24,7 @@ namespace Ixnas.AltchaNet
         private readonly Clock _clock = new DefaultClock();
         private readonly byte[] _key;
         private readonly double _maxSpamFilterScore = Defaults.MaxSpamFilterScore;
-        private readonly Func<IAltchaCancellableChallengeStore> _storeFactory;
+        private readonly Func<ChallengeStoreAdapter> _storeFactory;
         private readonly bool _useInMemoryStore;
 
         internal AltchaApiServiceBuilder()
@@ -33,7 +33,7 @@ namespace Ixnas.AltchaNet
 
         private AltchaApiServiceBuilder(byte[] key,
                                         bool useInMemoryStore,
-                                        Func<IAltchaCancellableChallengeStore> storeFactory,
+                                        Func<ChallengeStoreAdapter> storeFactory,
                                         Clock clock,
                                         double maxSpamFilterScore)
         {
@@ -57,7 +57,7 @@ namespace Ixnas.AltchaNet
             var inMemoryStoreWrapped = new ChallengeStoreAdapter(inMemoryStore);
             var storeFactory = _storeFactory ?? (() => inMemoryStoreWrapped);
             var serializer = new SystemTextJsonSerializer();
-            var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
+            var cryptoAlgorithm = new Sha256CryptoAlgorithm();
             var saltParser = new SaltParser(_clock);
             var responseValidatorPayloadConverter =
                 new ApiPayloadConverter();
@@ -74,16 +74,27 @@ namespace Ixnas.AltchaNet
                                     cryptoAlgorithm);
             var responseValidatorAltchaParser = new AltchaResponseParser(challengeFactory,
                                                                              responseValidatorSignatureParser);
+            
+            var configuration = new AltchaSha256Configuration()
+            {
+                StoreFactory = null,
+                Key = AltchaKey.FromBytesApiKey(_key),
+                Complexity = null,
+                Expiry = default,
+            };
+
             var responseValidator = new ResponseValidator(storeFactory,
                                                           responseValidatorAltchaParser,
-                                                          serializer);
+                                                          serializer,
+                                                          configuration);
             var spamFilterValidator =
                 new SpamFilterValidator(serializer,
                                         cryptoAlgorithm,
                                         _clock,
                                         storeFactory,
                                         spamFilterValidatorSignatureParser,
-                                        _maxSpamFilterScore);
+                                        _maxSpamFilterScore,
+                                        configuration);
             return new AltchaApiService(responseValidator, spamFilterValidator);
         }
 
@@ -147,7 +158,7 @@ namespace Ixnas.AltchaNet
             Guard.NotNull(store);
             return new AltchaApiServiceBuilder(_key,
                                                _useInMemoryStore,
-                                               () => store,
+                                               () => new ChallengeStoreAdapter(store),
                                                _clock,
                                                _maxSpamFilterScore);
         }
@@ -179,7 +190,7 @@ namespace Ixnas.AltchaNet
             Guard.NotNull(storeFactory);
             return new AltchaApiServiceBuilder(_key,
                                                _useInMemoryStore,
-                                               storeFactory,
+                                               () => new ChallengeStoreAdapter(storeFactory()),
                                                _clock,
                                                _maxSpamFilterScore);
         }

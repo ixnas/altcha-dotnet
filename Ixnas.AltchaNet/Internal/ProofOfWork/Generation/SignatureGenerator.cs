@@ -15,11 +15,11 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Generation
             _payloadConverter = payloadConverter;
         }
 
-        public Signature Generate(string payload)
+        public Signature Generate(string payload, AltchaKey key)
         {
             var payloadBytesResult = _payloadConverter.Convert(payload);
             var payloadBytes = payloadBytesResult.Value;
-            var signatureBytes = _cryptoAlgorithm.Sign(payloadBytes);
+            var signatureBytes = _cryptoAlgorithm.Sign(payloadBytes, key);
 
             return new Signature(signatureBytes,
                                  _payloadConverter,

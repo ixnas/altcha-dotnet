@@ -35,5 +35,13 @@ namespace Ixnas.AltchaNet
                 Bytes = bytes
             };
         }
+
+        internal static AltchaKey FromBytesApiKey(byte[] bytes)
+        {
+            return new AltchaKey
+            {
+                Bytes = bytes
+            };
+        }
     }
 }

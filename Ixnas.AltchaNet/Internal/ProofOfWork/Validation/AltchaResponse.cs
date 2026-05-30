@@ -22,13 +22,13 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork.Validation
             _challenge = challenge;
         }
 
-        public Result Validate()
+        public Result Validate(AltchaKey key)
         {
             if (!_challenge.MatchesAlgorithm(_algorithm))
                 return Result.Fail(ErrorCode.AlgorithmDoesNotMatch);
             if (!_challenge.MatchesChallengeString(Challenge))
                 return Result.Fail(ErrorCode.ChallengeDoesNotMatch);
-            if (!_signature.PayloadIsValid(Challenge)
+            if (!_signature.PayloadIsValid(Challenge, key)
                            .Success)
                 return Result.Fail(ErrorCode.PayloadDoesNotMatchSignature);
             if (_challenge.HasExpired())

@@ -40,7 +40,7 @@ namespace Ixnas.AltchaNet
         public AltchaSolver Build()
         {
             var serializer = new SystemTextJsonSerializer();
-            var cryptoAlgorithm = new Sha256CryptoAlgorithm(new byte[] { });
+            var cryptoAlgorithm = new Sha256CryptoAlgorithm();
             var saltValidator = GetSaltValidator();
             return new AltchaSolver(cryptoAlgorithm,
                                     serializer,

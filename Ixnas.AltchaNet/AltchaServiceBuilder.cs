@@ -20,21 +20,24 @@ namespace Ixnas.AltchaNet
     public sealed class AltchaServiceBuilder
     {
         private readonly Clock _clock = new DefaultClock();
-        private readonly AltchaComplexity _complexity =
-            new AltchaComplexity(Defaults.ComplexityMin, Defaults.ComplexityMax);
+        private readonly AltchaDeterministicComplexity _complexity = new AltchaDeterministicComplexity()
+        {
+            Counter = new AltchaComplexityCounterRange(Defaults.ComplexityMin, Defaults.ComplexityMax),
+            Cost = 1,
+        };
         private readonly AltchaExpiry _expiry = AltchaExpiry.FromSeconds(Defaults.ExpiryInSeconds);
-        private readonly byte[] _key;
-        private readonly Func<IAltchaCancellableChallengeStore> _storeFactory;
+        private readonly AltchaKey _key;
+        private readonly Func<ChallengeStoreAdapter> _storeFactory;
         private readonly bool _useInMemoryStore;
 
         internal AltchaServiceBuilder()
         {
         }
 
-        private AltchaServiceBuilder(Func<IAltchaCancellableChallengeStore> storeFactory,
+        private AltchaServiceBuilder(Func<ChallengeStoreAdapter> storeFactory,
                                      Clock clock,
-                                     byte[] key,
-                                     AltchaComplexity complexity,
+                                     AltchaKey key,
+                                     AltchaDeterministicComplexity complexity,
                                      AltchaExpiry expiry,
                                      bool useInMemoryStore)
         {
@@ -58,10 +61,10 @@ namespace Ixnas.AltchaNet
 
             var inMemoryStore = new InMemoryStore(_clock);
             var inMemoryStoreWrapped = new ChallengeStoreAdapter(inMemoryStore);
-            var storeFactory = _storeFactory ?? (() => inMemoryStoreWrapped);
+            Func<IAltchaChallengeStore> storeFactory = _storeFactory ?? (() => inMemoryStoreWrapped);
             var serializer = new SystemTextJsonSerializer();
-            var secretNumberGenerator = new RandomNumberGenerator(_complexity);
-            var cryptoAlgorithm = new Sha256CryptoAlgorithm(_key);
+            var secretNumberGenerator = new RandomNumberGenerator(_complexity.Counter);
+            var cryptoAlgorithm = new Sha256CryptoAlgorithm();
             var saltGenerator = new SaltGenerator(_clock,
                                                   _expiry);
             var saltParser = new SaltParser(_clock);
@@ -79,14 +82,23 @@ namespace Ixnas.AltchaNet
             var altchaParser = new AltchaResponseParser(challengeFactory,
                                                         signatureParser);
 
+            var configuration = new AltchaSha256Configuration()
+            {
+                StoreFactory = _storeFactory,
+                Key = _key,
+                Complexity = _complexity,
+                Expiry = _expiry,
+            };
+
             var challengeGenerator =
                 new ChallengeGenerator(challengeStringGenerator,
                                        cryptoAlgorithm,
                                        saltGenerator,
                                        secretNumberGenerator,
-                                       signatureGenerator);
+                                       signatureGenerator,
+                                       configuration);
 
-            var responseValidator = new ResponseValidator(storeFactory, altchaParser, serializer);
+            var responseValidator = new ResponseValidator(storeFactory, altchaParser, serializer, configuration);
 
             return new AltchaService(challengeGenerator, responseValidator);
         }
@@ -117,7 +129,7 @@ namespace Ixnas.AltchaNet
         public AltchaServiceBuilder UseStore(IAltchaCancellableChallengeStore store)
         {
             Guard.NotNull(store);
-            return new AltchaServiceBuilder(() => store,
+            return new AltchaServiceBuilder(() => new ChallengeStoreAdapter(store),
                                             _clock,
                                             _key,
                                             _complexity,
@@ -153,7 +165,7 @@ namespace Ixnas.AltchaNet
         public AltchaServiceBuilder UseStore(Func<IAltchaCancellableChallengeStore> storeFactory)
         {
             Guard.NotNull(storeFactory);
-            return new AltchaServiceBuilder(storeFactory,
+            return new AltchaServiceBuilder(() => new ChallengeStoreAdapter(storeFactory()),
                                             _clock,
                                             _key,
                                             _complexity,
@@ -169,12 +181,9 @@ namespace Ixnas.AltchaNet
         [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder UseSha256(byte[] key)
         {
-            Guard.NotNull(key);
-            if (key.Length != Defaults.RequiredKeySize)
-                throw new InvalidKeyException();
             return new AltchaServiceBuilder(_storeFactory,
                                             _clock,
-                                            key,
+                                            AltchaKey.FromBytes(key),
                                             _complexity,
                                             _expiry,
                                             _useInMemoryStore);
@@ -195,14 +204,10 @@ namespace Ixnas.AltchaNet
             if (configuration.Key == null)
                 throw new MissingKeyException();
 #endif
-            // stryker disable linq: Setting both min and max to the same value is allowed.
-            var complexity = new AltchaComplexity(configuration.Complexity.Counter.Min,
-                                                  configuration.Complexity.Counter.Max);
-            // stryker restore all
             return new AltchaServiceBuilder(() => new ChallengeStoreAdapter(configuration.StoreFactory()),
                                             _clock,
-                                            configuration.Key.Bytes,
-                                            complexity,
+                                            configuration.Key,
+                                            configuration.Complexity,
                                             configuration.Expiry,
                                             _useInMemoryStore);
         }
@@ -232,10 +237,15 @@ namespace Ixnas.AltchaNet
         [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder SetComplexity(AltchaComplexity complexity)
         {
+            var deterministicComplexity = new AltchaDeterministicComplexity()
+            {
+                Counter = new AltchaComplexityCounterRange(complexity.Min, complexity.Max),
+                Cost = 1,
+            };
             return new AltchaServiceBuilder(_storeFactory,
                                             _clock,
                                             _key,
-                                            complexity,
+                                            deterministicComplexity,
                                             _expiry,
                                             _useInMemoryStore);
         }

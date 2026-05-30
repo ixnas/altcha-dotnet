@@ -12,15 +12,18 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
     {
         private readonly AltchaResponseParser _altchaResponseParser;
         private readonly JsonSerializer _serializer;
-        private readonly Func<IAltchaCancellableChallengeStore> _storeFactory;
+        private readonly Func<IAltchaChallengeStore> _storeFactory;
+        private readonly AltchaSha256Configuration _configuration;
 
-        public ResponseValidator(Func<IAltchaCancellableChallengeStore> storeFactory,
+        public ResponseValidator(Func<IAltchaChallengeStore> storeFactory,
                                  AltchaResponseParser altchaResponseParser,
-                                 JsonSerializer serializer)
+                                 JsonSerializer serializer,
+                                 AltchaSha256Configuration configuration)
         {
             _storeFactory = storeFactory;
             _altchaResponseParser = altchaResponseParser;
             _serializer = serializer;
+            _configuration = configuration;
         }
 
         public async Task<AltchaValidationResult> Validate(string altchaBase64,
@@ -41,21 +44,22 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
             Guard.NotNull(altchaResponse);
 
             var store = _storeFactory();
-            Guard.NotNull<MissingStoreException>(store);
+            // stryker disable once nullcoalescing: Fails for .NET Framework
+            var storeAdapter = store as ChallengeStoreAdapter ?? new ChallengeStoreAdapter(store);
 
-            var validationResult = await IsValidResponse(altchaResponse, store, cancellationToken);
+            var validationResult = await IsValidResponse(altchaResponse, storeAdapter, cancellationToken);
             if (!validationResult.Success)
                 return validationResult.Error.ToValidationResult();
 
             var altcha = validationResult.Value;
-            await store.Store(altcha.Challenge, altcha.ExpiryUtc, cancellationToken);
+            await storeAdapter.Store(altcha.Challenge, altcha.ExpiryUtc, cancellationToken);
 
             return Error.Create(ErrorCode.NoError)
                         .ToValidationResult();
         }
 
         private async Task<Result<Validation.AltchaResponse>> IsValidResponse(AltchaResponse altchaResponse,
-            IAltchaCancellableChallengeStore store,
+            ChallengeStoreAdapter store,
             CancellationToken cancellationToken)
         {
             var parseResult = _altchaResponseParser.Parse(altchaResponse);
@@ -67,7 +71,7 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
             if (exists)
                 return Result<Validation.AltchaResponse>.Fail(ErrorCode.PreviouslyVerified);
 
-            var validationResult = altcha.Validate();
+            var validationResult = altcha.Validate(_configuration.Key);
             return Result<Validation.AltchaResponse>.From(validationResult, altcha);
         }
     }

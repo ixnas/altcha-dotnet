@@ -5,9 +5,16 @@ using Ixnas.AltchaNet.Exceptions;
 
 namespace Ixnas.AltchaNet.Internal.Common.Utilities
 {
-    internal class ChallengeStoreAdapter : IAltchaCancellableChallengeStore
+    internal class ChallengeStoreAdapter : IAltchaChallengeStore
     {
         private readonly IAltchaChallengeStore _challengeStore;
+        private readonly IAltchaCancellableChallengeStore _cancellableChallengeStore;
+
+        public ChallengeStoreAdapter(IAltchaCancellableChallengeStore cancellableChallengeStore)
+        {
+            Guard.NotNull<MissingStoreException>(cancellableChallengeStore);
+            _cancellableChallengeStore = cancellableChallengeStore;
+        }
 
         public ChallengeStoreAdapter(IAltchaChallengeStore challengeStore)
         {
@@ -15,8 +22,17 @@ namespace Ixnas.AltchaNet.Internal.Common.Utilities
             _challengeStore = challengeStore;
         }
 
+        public Task Store(string challenge, DateTimeOffset expiryUtc)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task Store(string challenge, DateTimeOffset expiryUtc, CancellationToken cancellationToken)
         {
+            if (_cancellableChallengeStore != null)
+            {
+                return _cancellableChallengeStore.Store(challenge, expiryUtc, cancellationToken);
+            }
 #if NET8_0_OR_GREATER
             return _challengeStore.Store(challenge, expiryUtc, cancellationToken);
 #else
@@ -24,8 +40,17 @@ namespace Ixnas.AltchaNet.Internal.Common.Utilities
 #endif
         }
 
+        public Task<bool> Exists(string challenge)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<bool> Exists(string challenge, CancellationToken cancellationToken)
         {
+            if (_cancellableChallengeStore != null)
+            {
+                return _cancellableChallengeStore.Exists(challenge, cancellationToken);
+            }
 #if NET8_0_OR_GREATER
             return _challengeStore.Exists(challenge, cancellationToken);
 #else
