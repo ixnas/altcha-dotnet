@@ -17,6 +17,7 @@ namespace Ixnas.AltchaNet
     /// <summary>
     ///     Builds the service that provides self-hosted ALTCHA challenges
     /// </summary>
+    [Obsolete("Will be removed in the next major version. Use Altcha.CreateService(AltchaConfiguration) instead.")]
     public sealed class AltchaServiceBuilder
     {
         private readonly Clock _clock = new DefaultClock();
@@ -108,7 +109,6 @@ namespace Ixnas.AltchaNet
         /// </summary>
         /// <param name="store">Store to use.</param>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
-        [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder UseStore(IAltchaChallengeStore store)
         {
             Guard.NotNull(store);
@@ -125,7 +125,6 @@ namespace Ixnas.AltchaNet
         /// </summary>
         /// <param name="store">Store to use that supports CancellationTokens.</param>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
-        [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder UseStore(IAltchaCancellableChallengeStore store)
         {
             Guard.NotNull(store);
@@ -143,7 +142,6 @@ namespace Ixnas.AltchaNet
         /// </summary>
         /// <param name="storeFactory">Store factory function to use.</param>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
-        [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder UseStore(Func<IAltchaChallengeStore> storeFactory)
         {
             Guard.NotNull(storeFactory);
@@ -161,7 +159,6 @@ namespace Ixnas.AltchaNet
         /// </summary>
         /// <param name="storeFactory">Store factory function to use of which the store supports CancellationTokens.</param>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
-        [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder UseStore(Func<IAltchaCancellableChallengeStore> storeFactory)
         {
             Guard.NotNull(storeFactory);
@@ -178,7 +175,6 @@ namespace Ixnas.AltchaNet
         /// </summary>
         /// <param name="key">A byte array representing the key to use. Must be exactly 64 bytes long.</param>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
-        [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder UseSha256(byte[] key)
         {
             return new AltchaServiceBuilder(_storeFactory,
@@ -189,14 +185,7 @@ namespace Ixnas.AltchaNet
                                             _useInMemoryStore);
         }
 
-        /// <summary>
-        ///     (Required) Configures the SHA-256 algorithm for hashing and signing. Currently the only supported algorithm.
-        /// </summary>
-        /// <param name="configuration">The configuration to use.</param>
-        /// <returns>A new instance of the builder with the updated configuration.</returns>
-        /// <exception cref="MissingStoreException"></exception>
-        /// <exception cref="MissingKeyException"></exception>
-        public AltchaServiceBuilder UseSha256(AltchaSha256Configuration configuration)
+        internal AltchaServiceBuilder UseSha256(AltchaSha256Configuration configuration)
         {
 #if !NET8_0_OR_GREATER
             if (configuration.StoreFactory == null)
@@ -217,7 +206,6 @@ namespace Ixnas.AltchaNet
         ///     purposes.
         /// </summary>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
-        [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder UseInMemoryStore()
         {
             return new AltchaServiceBuilder(null,
@@ -234,7 +222,6 @@ namespace Ixnas.AltchaNet
         /// </summary>
         /// <param name="complexity">Complexity range (default 50,000 - 100,000)</param>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
-        [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder SetComplexity(AltchaComplexity complexity)
         {
             var deterministicComplexity = new AltchaDeterministicComplexity()
@@ -257,7 +244,6 @@ namespace Ixnas.AltchaNet
         /// <param name="min">Minimum complexity (default 50,000)</param>
         /// <param name="max">Maximum complexity (default 100,000)</param>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
-        [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder SetComplexity(int min, int max)
         {
             var complexity = new AltchaComplexity(min, max);
@@ -269,7 +255,6 @@ namespace Ixnas.AltchaNet
         /// </summary>
         /// <param name="expiry">Expiry time (default 120 seconds)</param>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
-        [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder SetExpiry(AltchaExpiry expiry)
         {
             return new AltchaServiceBuilder(_storeFactory,
@@ -285,7 +270,6 @@ namespace Ixnas.AltchaNet
         /// </summary>
         /// <param name="expiryInSeconds">Expiry in seconds (default 120)</param>
         /// <returns>A new instance of the builder with the updated configuration.</returns>
-        [Obsolete("Will be removed in the next major version. Use UseSha256(AltchaConfiguration) instead.")]
         public AltchaServiceBuilder SetExpiryInSeconds(int expiryInSeconds)
         {
             var expiry = AltchaExpiry.FromSeconds(expiryInSeconds);

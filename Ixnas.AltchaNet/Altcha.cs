@@ -11,9 +11,22 @@ namespace Ixnas.AltchaNet
         ///     Creates a service builder for self-hosted ALTCHA challenges.
         /// </summary>
         /// <returns>A new service builder instance.</returns>
+        [Obsolete("Will be removed in the next major version. Please use CreateService(AltchaConfiguration) instead.")]
         public static AltchaServiceBuilder CreateServiceBuilder()
         {
             return new AltchaServiceBuilder();
+        }
+
+        /// <summary>
+        ///     Creates a service for self-hosted ALTCHA challenges.
+        /// </summary>
+        /// <param name="configuration">The configuration to use.</param>
+        /// <returns>A new service instance.</returns>
+        public static AltchaService CreateService(AltchaSha256Configuration configuration)
+        {
+            return CreateServiceBuilder()
+                   .UseSha256(configuration)
+                   .Build();
         }
 
         /// <summary>
@@ -29,10 +42,35 @@ namespace Ixnas.AltchaNet
         /// <summary>
         ///     Creates a builder for an ALTCHA solver.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A new solver builder instance.</returns>
+        [Obsolete("Will be removed in the next major version. Please use Altcha.CreateSolver() instead.")]
         public static AltchaSolverBuilder CreateSolverBuilder()
         {
             return new AltchaSolverBuilder();
+        }
+
+        /// <summary>
+        ///     Creates an ALTCHA solver.
+        /// </summary>
+        /// <returns>A new solver instance.</returns>
+        public static AltchaSolver CreateSolver()
+        {
+            return CreateSolverBuilder().Build();
+        }
+
+        /// <summary>
+        ///     Creates an ALTCHA solver.
+        /// </summary>
+        /// <param name="configuration">The configuration to use.</param>
+        /// <returns>A new solver instance.</returns>
+        public static AltchaSolver CreateSolver(AltchaSolverConfiguration configuration)
+        {
+            if (configuration.IgnoreExpiry)
+                return CreateSolverBuilder()
+                       .IgnoreExpiry()
+                       .Build();
+            return CreateSolverBuilder()
+                .Build();
         }
     }
 }

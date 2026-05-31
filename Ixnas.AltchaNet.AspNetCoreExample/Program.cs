@@ -29,16 +29,13 @@ builder.Services.AddHttpClient(Options.DefaultName, _ => { })
        });
 
 // Add Altcha services.
-builder.Services.AddScoped(sp => Altcha.CreateServiceBuilder()
-                                       .UseSha256(new AltchaSha256Configuration
-                                       {
-                                           Key = AltchaKey.FromBytes(selfHostedKey),
-                                           StoreFactory = sp.GetRequiredService<IAltchaChallengeStore>,
-                                           Expiry = AltchaExpiry.FromSeconds(5)
-                                       })
-                                       .Build());
-builder.Services.AddScoped(_ => Altcha.CreateSolverBuilder()
-                                      .Build());
+builder.Services.AddScoped(sp => Altcha.CreateService(new AltchaSha256Configuration
+{
+    Key = AltchaKey.FromBytes(selfHostedKey),
+    StoreFactory = sp.GetRequiredService<IAltchaChallengeStore>,
+    Expiry = AltchaExpiry.FromSeconds(5)
+}));
+builder.Services.AddScoped(_ => Altcha.CreateSolver());
 
 builder.Services.AddMvc(options => options.EnableEndpointRouting = false);
 

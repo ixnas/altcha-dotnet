@@ -46,18 +46,16 @@ dotnet add package Ixnas.AltchaNet
 First make sure you've [set up the front-end widget](https://altcha.org/docs/v2/widget-v3/#developer-experience)
 to use your challenge endpoint.
 
-The entrypoint of this library contains a service builder for self-hosted configurations.
-This builder configures the service that is used to create ALTCHA challenges and validate their responses.
+The entrypoint of this library contains a method for building and configuring a service.
+This service can be used to create ALTCHA challenges and validate their responses.
 The most basic configuration looks like this:
 
 ```csharp
-var altchaService = Altcha.CreateServiceBuilder()
-                          .UseSha256(new AltchaSha256Configuration
-                          {
-                              Key = AltchaKey.FromBytes(key),
-                              StoreFactory = storeFactory,
-                          })
-                          .Build();
+var altchaService = Altcha.CreateService(new AltchaSha256Configuration
+{
+    Key = AltchaKey.FromBytes(key),
+    StoreFactory = storeFactory,
+});
 ```
 
 Here is a description of the different configuration options.
@@ -193,12 +191,18 @@ The cancellation token can cancel queries and updates to the store implementatio
 
 ### Set up
 
-The entrypoint of this library contains a builder for creating solver instances. The most basic configuration looks like
+The entrypoint of this library contains a method for creating solver instances. The most basic configuration looks like
 this:
 
 ```csharp
-var altchaSolver = Altcha.CreateSolverBuilder()
-                         .Build();
+var altchaSolver = Altcha.CreateSolver();
+
+// Or
+
+var altchaSolver = Altcha.CreateSolver(new AltchaSolverConfiguration()
+{
+    IgnoreExpiry = true,
+});
 ```
 
 Here is a description of the different configuration options.

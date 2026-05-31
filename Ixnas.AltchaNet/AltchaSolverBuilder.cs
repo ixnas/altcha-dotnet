@@ -1,3 +1,4 @@
+using System;
 using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Internal.Common.Cryptography;
 using Ixnas.AltchaNet.Internal.Common.Salt;
@@ -10,6 +11,7 @@ namespace Ixnas.AltchaNet
     /// <summary>
     ///     Builds an ALTCHA solver instance.
     /// </summary>
+    [Obsolete("Will be removed in the next major version. Please use Altcha.CreateSolver() instead.")]
     public sealed class AltchaSolverBuilder
     {
         private readonly Clock _clock = new DefaultClock();
@@ -46,18 +48,6 @@ namespace Ixnas.AltchaNet
                                     serializer,
                                     saltValidator);
         }
-
-#if DEBUG
-        /// <summary>
-        ///     DEBUG ONLY: Provide an alternative clock implementation. Used for testing time based logic.
-        /// </summary>
-        /// <param name="clock">An alternative clock implementation.</param>
-        /// <returns>A new instance of the builder with the updated configuration.</returns>
-        public AltchaSolverBuilder UseClock(Clock clock)
-        {
-            return new AltchaSolverBuilder(clock, _ignoreExpiry);
-        }
-#endif
 
         private SaltValidator GetSaltValidator()
         {

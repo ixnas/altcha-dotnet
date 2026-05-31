@@ -11,5 +11,18 @@ namespace Ixnas.AltchaNet.Tests
             var builder2 = builder.IgnoreExpiry();
             Assert.NotEqual(builder, builder2);
         }
+
+        [Fact]
+        public void GivenFactoryMethodsCalled_ReturnsNewSolverInstance()
+        {
+            var builder1 = Altcha.CreateSolver();
+            Assert.NotNull(builder1);
+
+            var builder2 = Altcha.CreateSolver(new AltchaSolverConfiguration()
+            {
+                IgnoreExpiry = true,
+            });
+            Assert.NotNull(builder2);
+        }
     }
 }

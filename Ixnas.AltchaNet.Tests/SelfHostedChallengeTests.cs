@@ -243,20 +243,16 @@ namespace Ixnas.AltchaNet.Tests
             var key1 = TestUtils.GetKey();
             var key2 = TestUtils.GetKey();
             key2[0] = 2;
-            var service1 = Altcha.CreateServiceBuilder()
-                                 .UseSha256(new AltchaSha256Configuration()
-                                 {
-                                     StoreFactory = () => store,
-                                     Key = AltchaKey.FromBytes(key1),
-                                 })
-                                 .Build();
-            var service2 = Altcha.CreateServiceBuilder()
-                                 .UseSha256(new AltchaSha256Configuration()
-                                 {
-                                     StoreFactory = () => store,
-                                     Key = AltchaKey.FromBytes(key2),
-                                 })
-                                 .Build();
+            var service1 = Altcha.CreateService(new AltchaSha256Configuration()
+            {
+                StoreFactory = () => store,
+                Key = AltchaKey.FromBytes(key1),
+            });
+            var service2 = Altcha.CreateService(new AltchaSha256Configuration()
+            {
+                StoreFactory = () => store,
+                Key = AltchaKey.FromBytes(key2),
+            });
             
             var challenge = GenerateWithOverride(service1, new AltchaGenerateChallengeOverrides(), OverrideMethod.ConfigurationRecord, AltchaKey.FromBytes(key2));
             

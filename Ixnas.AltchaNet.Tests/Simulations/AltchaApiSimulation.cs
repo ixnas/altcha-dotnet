@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Ixnas.AltchaNet.Debug;
 
 namespace Ixnas.AltchaNet.Tests.Simulations
 {
@@ -25,15 +26,18 @@ namespace Ixnas.AltchaNet.Tests.Simulations
         }
 
         private readonly string _apiSecret;
+        private readonly Clock _clock;
 
-        public AltchaApiSimulation(string apiSecret)
+        public AltchaApiSimulation(string apiSecret, Clock clock = null)
         {
+            _clock = clock;
             _apiSecret = apiSecret;
         }
 
         public AltchaChallenge Generate(int expiryOffsetSeconds = 0)
         {
-            var nowSeconds = DateTimeOffset.UtcNow.AddSeconds(expiryOffsetSeconds)
+            var nowBase = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+            var nowSeconds = nowBase.AddSeconds(expiryOffsetSeconds)
                                            .ToUnixTimeSeconds();
             const string randomString = "b9f517664af74946e13c75a5";
             var salt = $"{randomString}?expires={nowSeconds}&_someOtherProperty=true";

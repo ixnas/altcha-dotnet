@@ -210,11 +210,12 @@ namespace Ixnas.AltchaNet.Tests
             const string expectedErrorMessage = "Challenge expired.";
             const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.ChallengeExpired;
 
+            _clock.SetOffsetInSeconds(-30);
             var service = TestUtils.ServiceFactories[serviceType]
-                                   .GetServiceWithExpiry(10, (IAltchaCancellableChallengeStore)null);
+                                   .GetServiceWithExpiry(10, (IAltchaCancellableChallengeStore)null, _clock);
             var challenge = service.Generate();
             var solver = GetDefaultSolver();
-            _clock.SetOffsetInSeconds(30);
+            _clock.SetOffsetInSeconds(0);
             var result = solver.Solve(challenge);
 
             Assert.False(result.Success);
@@ -231,10 +232,11 @@ namespace Ixnas.AltchaNet.Tests
             const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.NoError;
 
             var service = TestUtils.ServiceFactories[serviceType]
-                                   .GetServiceWithExpiry(10, (IAltchaCancellableChallengeStore)null);
+                                   .GetServiceWithExpiry(10, (IAltchaCancellableChallengeStore)null, _clock);
+            _clock.SetOffsetInSeconds(-30);
             var challenge = service.Generate();
+            _clock.SetOffsetInSeconds(0);
             var solver = GetExpiryIgnoringSolver();
-            _clock.SetOffsetInSeconds(30);
             var result = solver.Solve(challenge);
 
             Assert.True(result.Success);
@@ -244,17 +246,15 @@ namespace Ixnas.AltchaNet.Tests
 
         private AltchaSolver GetDefaultSolver()
         {
-            return Altcha.CreateSolverBuilder()
-                         .UseClock(_clock)
-                         .Build();
+            return Altcha.CreateSolver(new AltchaSolverConfiguration());
         }
 
         private AltchaSolver GetExpiryIgnoringSolver()
         {
-            return Altcha.CreateSolverBuilder()
-                         .IgnoreExpiry()
-                         .UseClock(_clock)
-                         .Build();
+            return Altcha.CreateSolver(new AltchaSolverConfiguration()
+                                       {
+                                           IgnoreExpiry = true,
+                                       });
         }
     }
 }
