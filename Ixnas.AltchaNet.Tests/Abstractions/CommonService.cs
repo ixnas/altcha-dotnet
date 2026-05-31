@@ -73,7 +73,7 @@ namespace Ixnas.AltchaNet.Tests.Abstractions
             var key = TestUtils.GetKey();
             var storeClock = clock ?? new ClockFake();
             store = store ?? new InMemoryStore(storeClock);
-            var config = new AltchaSha256Configuration()
+            var config = new AltchaSha256Configuration
             {
                 Key = AltchaKey.FromBytes(key),
                 StoreFactory = () => store,

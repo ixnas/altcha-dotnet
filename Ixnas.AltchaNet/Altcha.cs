@@ -55,7 +55,8 @@ namespace Ixnas.AltchaNet
         /// <returns>A new solver instance.</returns>
         public static AltchaSolver CreateSolver()
         {
-            return CreateSolverBuilder().Build();
+            return CreateSolverBuilder()
+                .Build();
         }
 
         /// <summary>

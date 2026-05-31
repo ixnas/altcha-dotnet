@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal.Common.Serialization;
 using Ixnas.AltchaNet.Internal.Common.Utilities;
 using Ixnas.AltchaNet.Internal.ProofOfWork.Validation;
@@ -11,9 +10,9 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
     internal class ResponseValidator
     {
         private readonly AltchaResponseParser _altchaResponseParser;
+        private readonly AltchaSha256Configuration _configuration;
         private readonly JsonSerializer _serializer;
         private readonly Func<IAltchaChallengeStore> _storeFactory;
-        private readonly AltchaSha256Configuration _configuration;
 
         public ResponseValidator(Func<IAltchaChallengeStore> storeFactory,
                                  AltchaResponseParser altchaResponseParser,

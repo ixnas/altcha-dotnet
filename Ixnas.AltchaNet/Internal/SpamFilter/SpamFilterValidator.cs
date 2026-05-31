@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Ixnas.AltchaNet.Debug;
-using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal.Common.Converters;
 using Ixnas.AltchaNet.Internal.Common.Cryptography;
 using Ixnas.AltchaNet.Internal.Common.Serialization;
@@ -47,12 +46,12 @@ namespace Ixnas.AltchaNet.Internal.SpamFilter
         }
 
         private readonly Clock _clock;
+        private readonly AltchaSha256Configuration _configuration;
         private readonly CryptoAlgorithm _cryptoAlgorithm;
         private readonly double _maxSpamFilterScore;
         private readonly JsonSerializer _serializer;
         private readonly SignatureParser _signatureParser;
         private readonly Func<ChallengeStoreAdapter> _storeFactory;
-        private readonly AltchaSha256Configuration _configuration;
 
         public SpamFilterValidator(JsonSerializer serializer,
                                    CryptoAlgorithm cryptoAlgorithm,

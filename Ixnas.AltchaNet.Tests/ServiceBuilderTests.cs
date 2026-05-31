@@ -10,7 +10,7 @@ namespace Ixnas.AltchaNet.Tests
         public enum SettingParameter
         {
             Primitives,
-            Struct,
+            Struct
         }
 
         private readonly AltchaServiceBuilder _builder = Altcha.CreateServiceBuilder();
@@ -78,7 +78,7 @@ namespace Ixnas.AltchaNet.Tests
         [Fact]
         public void GivenKeyIsNull_WhenUseSha256Called_ThenThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => _builder.UseSha256((byte[])null));
+            Assert.Throws<ArgumentNullException>(() => _builder.UseSha256(null));
         }
 
         [Fact]
@@ -182,7 +182,7 @@ namespace Ixnas.AltchaNet.Tests
                                                                max,
                                                                parameter));
         }
-        
+
         [Theory]
         [InlineData(-10, 10)]
         [InlineData(10, -10)]
@@ -192,19 +192,18 @@ namespace Ixnas.AltchaNet.Tests
             int max)
         {
             var key = TestUtils.GetKey();
-            
-            Assert.Throws<InvalidComplexityException>(() => Altcha.CreateService(new AltchaSha256Configuration()
+
+            Assert.Throws<InvalidComplexityException>(() => Altcha.CreateService(new AltchaSha256Configuration
             {
                 StoreFactory = () => new InMemoryStore(new ClockFake()),
                 Key = AltchaKey.FromBytes(key),
-                Complexity = new AltchaDeterministicComplexity()
+                Complexity = new AltchaDeterministicComplexity
                 {
                     Counter = new AltchaComplexityCounterRange(min, max),
-                    Cost = 1,
+                    Cost = 1
                 }
             }));
         }
-        
 
         [Theory]
         [InlineData(-10, 10)]
@@ -239,7 +238,7 @@ namespace Ixnas.AltchaNet.Tests
                                                  parameter);
             Assert.NotNull(builder);
         }
-        
+
         [Theory]
         [InlineData(0, 0)]
         [InlineData(10, 10)]
@@ -249,18 +248,18 @@ namespace Ixnas.AltchaNet.Tests
             int max)
         {
             var key = TestUtils.GetKey();
-            
-            var service = Altcha.CreateService(new AltchaSha256Configuration()
+
+            var service = Altcha.CreateService(new AltchaSha256Configuration
             {
                 StoreFactory = () => new InMemoryStore(new ClockFake()),
                 Key = AltchaKey.FromBytes(key),
-                Complexity = new AltchaDeterministicComplexity()
+                Complexity = new AltchaDeterministicComplexity
                 {
                     Counter = new AltchaComplexityCounterRange(min, max),
-                    Cost = 1,
+                    Cost = 1
                 }
             });
-            
+
             Assert.NotNull(service);
         }
 
@@ -299,27 +298,6 @@ namespace Ixnas.AltchaNet.Tests
             var builder = SetExpiryWithParameter(Altcha.CreateServiceBuilder(), expiryInSeconds, parameter);
             Assert.NotNull(builder);
         }
-
-        // Check required parameters for .NET Standard
-#if !NET8_0_OR_GREATER
-        [Fact]
-        public void GivenConfigurationIsMissingKey_WhenUseSha256Called_ThenThrowException()
-        {
-            Assert.Throws<MissingKeyException>(() => Altcha.CreateService(new AltchaSha256Configuration()
-            {
-                StoreFactory = () => new AltchaChallengeStoreFake(),
-            }));
-        }
-
-        [Fact]
-        public void GivenConfigurationIsMissingStoreFactory_WhenUseSha256Called_ThenThrowException()
-        {
-            Assert.Throws<MissingStoreException>(() => Altcha.CreateService(new AltchaSha256Configuration()
-            {
-                Key = AltchaKey.FromBytes(TestUtils.GetKey()),
-            }));
-        }
-#endif
 
         [Fact]
         public void GivenClockIsNull_WhenUseClockCalled_ThenThrowArgumentNullException()
@@ -397,5 +375,26 @@ namespace Ixnas.AltchaNet.Tests
                     throw new InvalidOperationException();
             }
         }
+
+        // Check required parameters for .NET Standard
+#if !NET8_0_OR_GREATER
+        [Fact]
+        public void GivenConfigurationIsMissingKey_WhenUseSha256Called_ThenThrowException()
+        {
+            Assert.Throws<MissingKeyException>(() => Altcha.CreateService(new AltchaSha256Configuration
+            {
+                StoreFactory = () => new AltchaChallengeStoreFake()
+            }));
+        }
+
+        [Fact]
+        public void GivenConfigurationIsMissingStoreFactory_WhenUseSha256Called_ThenThrowException()
+        {
+            Assert.Throws<MissingStoreException>(() => Altcha.CreateService(new AltchaSha256Configuration
+            {
+                Key = AltchaKey.FromBytes(TestUtils.GetKey())
+            }));
+        }
+#endif
     }
 }

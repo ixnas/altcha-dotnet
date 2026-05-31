@@ -52,29 +52,28 @@ namespace Ixnas.AltchaNet
                 Expiry = overrides.Expiry ?? configuration.Expiry
             });
 #else
-            return _challengeGenerator.Generate((configuration) =>
+            return _challengeGenerator.Generate(configuration =>
             {
                 if (overrides.Complexity.HasValue)
-                {
-                    configuration.Complexity.Counter = new AltchaComplexityCounterRange(overrides.Complexity.Value.Min, overrides.Complexity.Value.Max);
-                }
+                    configuration.Complexity.Counter =
+                        new AltchaComplexityCounterRange(overrides.Complexity.Value.Min,
+                                                         overrides.Complexity.Value.Max);
 
                 if (overrides.Expiry.HasValue)
-                {
                     configuration.Expiry = overrides.Expiry.Value;
-                }
-                        
+
                 return configuration;
             });
 #endif
         }
-        
+
         /// <summary>
         ///     Generates a new ALTCHA challenge.
         /// </summary>
         /// <param name="overrideConfigurationFn">Configuration overrides applied to only this generation.</param>
         /// <returns></returns>
-        public AltchaChallenge Generate(Func<AltchaSha256Configuration, AltchaSha256Configuration> overrideConfigurationFn)
+        public AltchaChallenge Generate(
+            Func<AltchaSha256Configuration, AltchaSha256Configuration> overrideConfigurationFn)
         {
             return _challengeGenerator.Generate(overrideConfigurationFn);
         }

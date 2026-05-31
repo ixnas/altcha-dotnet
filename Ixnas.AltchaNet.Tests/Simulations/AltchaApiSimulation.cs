@@ -38,7 +38,7 @@ namespace Ixnas.AltchaNet.Tests.Simulations
         {
             var nowBase = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
             var nowSeconds = nowBase.AddSeconds(expiryOffsetSeconds)
-                                           .ToUnixTimeSeconds();
+                                    .ToUnixTimeSeconds();
             const string randomString = "b9f517664af74946e13c75a5";
             var salt = $"{randomString}?expires={nowSeconds}&_someOtherProperty=true";
             const int randomNumber = 2;

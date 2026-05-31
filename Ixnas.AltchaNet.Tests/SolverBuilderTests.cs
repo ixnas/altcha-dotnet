@@ -18,9 +18,9 @@ namespace Ixnas.AltchaNet.Tests
             var builder1 = Altcha.CreateSolver();
             Assert.NotNull(builder1);
 
-            var builder2 = Altcha.CreateSolver(new AltchaSolverConfiguration()
+            var builder2 = Altcha.CreateSolver(new AltchaSolverConfiguration
             {
-                IgnoreExpiry = true,
+                IgnoreExpiry = true
             });
             Assert.NotNull(builder2);
         }

@@ -9,8 +9,8 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
     internal class ChallengeGenerator
     {
         private readonly string _algorithm;
-        private readonly AltchaSha256Configuration _configuration;
         private readonly ChallengeStringGenerator _challengeStringGenerator;
+        private readonly AltchaSha256Configuration _configuration;
         private readonly RandomNumberGenerator _randomNumberGenerator;
         private readonly SaltGenerator _saltGenerator;
         private readonly SignatureGenerator _signatureGenerator;
@@ -59,16 +59,16 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
 #if NET8_0_OR_GREATER
             return configurationOverrides(_configuration);
 #else
-            var copy = new AltchaSha256Configuration()
+            var copy = new AltchaSha256Configuration
             {
-                Complexity = new AltchaDeterministicComplexity()
+                Complexity = new AltchaDeterministicComplexity
                 {
                     Counter = _configuration.Complexity.Counter,
-                    Cost = _configuration.Complexity.Cost,
+                    Cost = _configuration.Complexity.Cost
                 },
                 Key = _configuration.Key,
                 Expiry = _configuration.Expiry,
-                StoreFactory = _configuration.StoreFactory,
+                StoreFactory = _configuration.StoreFactory
             };
             return configurationOverrides(copy);
 #endif

@@ -139,7 +139,8 @@ Read [ALTCHA's documentation](https://altcha.org/docs/v2/widget-integration/#usi
 JSON object.
 
 It's possible to override configuration options by passing an anonymous function to change the configuration.
-This can be useful when implementing a [dynamic complexity](https://altcha.org/docs/v2/complexity/#recommended-practices)
+This can be useful when implementing
+a [dynamic complexity](https://altcha.org/docs/v2/complexity/#recommended-practices)
 strategy, for example.
 
 ```csharp

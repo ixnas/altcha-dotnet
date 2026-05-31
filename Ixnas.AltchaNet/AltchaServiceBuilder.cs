@@ -21,10 +21,10 @@ namespace Ixnas.AltchaNet
     public sealed class AltchaServiceBuilder
     {
         private readonly Clock _clock = new DefaultClock();
-        private readonly AltchaDeterministicComplexity _complexity = new AltchaDeterministicComplexity()
+        private readonly AltchaDeterministicComplexity _complexity = new AltchaDeterministicComplexity
         {
             Counter = new AltchaComplexityCounterRange(Defaults.ComplexityMin, Defaults.ComplexityMax),
-            Cost = 1,
+            Cost = 1
         };
         private readonly AltchaExpiry _expiry = AltchaExpiry.FromSeconds(Defaults.ExpiryInSeconds);
         private readonly AltchaKey _key;
@@ -83,12 +83,12 @@ namespace Ixnas.AltchaNet
             var altchaParser = new AltchaResponseParser(challengeFactory,
                                                         signatureParser);
 
-            var configuration = new AltchaSha256Configuration()
+            var configuration = new AltchaSha256Configuration
             {
                 StoreFactory = _storeFactory,
                 Key = _key,
                 Complexity = _complexity,
-                Expiry = _expiry,
+                Expiry = _expiry
             };
 
             var challengeGenerator =
@@ -99,7 +99,10 @@ namespace Ixnas.AltchaNet
                                        signatureGenerator,
                                        configuration);
 
-            var responseValidator = new ResponseValidator(storeFactory, altchaParser, serializer, configuration);
+            var responseValidator = new ResponseValidator(storeFactory,
+                                                          altchaParser,
+                                                          serializer,
+                                                          configuration);
 
             return new AltchaService(challengeGenerator, responseValidator);
         }
@@ -185,22 +188,6 @@ namespace Ixnas.AltchaNet
                                             _useInMemoryStore);
         }
 
-        internal AltchaServiceBuilder UseSha256(AltchaSha256Configuration configuration)
-        {
-#if !NET8_0_OR_GREATER
-            if (configuration.StoreFactory == null)
-                throw new MissingStoreException();
-            if (configuration.Key == null)
-                throw new MissingKeyException();
-#endif
-            return new AltchaServiceBuilder(() => new ChallengeStoreAdapter(configuration.StoreFactory()),
-                                            _clock,
-                                            configuration.Key,
-                                            configuration.Complexity,
-                                            configuration.Expiry,
-                                            _useInMemoryStore);
-        }
-
         /// <summary>
         ///     Configures a simple in-memory store for previously verified ALTCHA responses. Should only be used for testing
         ///     purposes.
@@ -224,10 +211,10 @@ namespace Ixnas.AltchaNet
         /// <returns>A new instance of the builder with the updated configuration.</returns>
         public AltchaServiceBuilder SetComplexity(AltchaComplexity complexity)
         {
-            var deterministicComplexity = new AltchaDeterministicComplexity()
+            var deterministicComplexity = new AltchaDeterministicComplexity
             {
                 Counter = new AltchaComplexityCounterRange(complexity.Min, complexity.Max),
-                Cost = 1,
+                Cost = 1
             };
             return new AltchaServiceBuilder(_storeFactory,
                                             _clock,
@@ -293,5 +280,21 @@ namespace Ixnas.AltchaNet
                                             _useInMemoryStore);
         }
 #endif
+
+        internal AltchaServiceBuilder UseSha256(AltchaSha256Configuration configuration)
+        {
+#if !NET8_0_OR_GREATER
+            if (configuration.StoreFactory == null)
+                throw new MissingStoreException();
+            if (configuration.Key == null)
+                throw new MissingKeyException();
+#endif
+            return new AltchaServiceBuilder(() => new ChallengeStoreAdapter(configuration.StoreFactory()),
+                                            _clock,
+                                            configuration.Key,
+                                            configuration.Complexity,
+                                            configuration.Expiry,
+                                            _useInMemoryStore);
+        }
     }
 }

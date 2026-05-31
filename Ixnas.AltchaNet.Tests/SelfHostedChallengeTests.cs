@@ -12,7 +12,7 @@ namespace Ixnas.AltchaNet.Tests
         public enum OverrideMethod
         {
             Deprecated,
-            ConfigurationRecord,
+            ConfigurationRecord
         }
 
         private readonly ClockFake _clock = new ClockFake();
@@ -237,31 +237,35 @@ namespace Ixnas.AltchaNet.Tests
         [Theory]
         [InlineData(CommonServiceValidationMethod.Base64)]
         [InlineData(CommonServiceValidationMethod.Object)]
-        public async Task GivenChallengeOverridesIncludesKey_WhenCallingGenerate_UsesDifferentKey(CommonServiceValidationMethod validationMethod)
+        public async Task GivenChallengeOverridesIncludesKey_WhenCallingGenerate_UsesDifferentKey(
+            CommonServiceValidationMethod validationMethod)
         {
             var store = new InMemoryStore(_clock);
             var key1 = TestUtils.GetKey();
             var key2 = TestUtils.GetKey();
             key2[0] = 2;
-            var service1 = Altcha.CreateService(new AltchaSha256Configuration()
+            var service1 = Altcha.CreateService(new AltchaSha256Configuration
             {
                 StoreFactory = () => store,
-                Key = AltchaKey.FromBytes(key1),
+                Key = AltchaKey.FromBytes(key1)
             });
-            var service2 = Altcha.CreateService(new AltchaSha256Configuration()
+            var service2 = Altcha.CreateService(new AltchaSha256Configuration
             {
                 StoreFactory = () => store,
-                Key = AltchaKey.FromBytes(key2),
+                Key = AltchaKey.FromBytes(key2)
             });
-            
-            var challenge = GenerateWithOverride(service1, new AltchaGenerateChallengeOverrides(), OverrideMethod.ConfigurationRecord, AltchaKey.FromBytes(key2));
-            
+
+            var challenge = GenerateWithOverride(service1,
+                                                 new AltchaGenerateChallengeOverrides(),
+                                                 OverrideMethod.ConfigurationRecord,
+                                                 AltchaKey.FromBytes(key2));
+
             var simulation = new AltchaFrontEndSimulation();
             var result = simulation.Run(challenge);
-            
+
             var validationResult1 = await ValidateWithMethod(service1, result.Altcha, validationMethod);
             Assert.False(validationResult1.IsValid);
-            
+
             var validationResult2 = await ValidateWithMethod(service2, result.Altcha, validationMethod);
             Assert.True(validationResult2.IsValid);
         }
@@ -360,24 +364,18 @@ namespace Ixnas.AltchaNet.Tests
                         Key = altchaKeyOverride ?? configuration.Key,
                     });
 #else
-                    return service.Generate((configuration) =>
+                    return service.Generate(configuration =>
                     {
                         if (overrides.Complexity.HasValue)
-                        {
                             configuration.Complexity.Counter =
                                 new AltchaComplexityCounterRange(overrides.Complexity.Value.Min,
                                                                  overrides.Complexity.Value.Max);
-                        }
 
                         if (overrides.Expiry.HasValue)
-                        {
                             configuration.Expiry = overrides.Expiry.Value;
-                        }
 
                         if (altchaKeyOverride != null)
-                        {
                             configuration.Key = altchaKeyOverride;
-                        }
 
                         return configuration;
                     });

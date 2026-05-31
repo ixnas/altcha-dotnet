@@ -74,13 +74,13 @@ namespace Ixnas.AltchaNet
                                     cryptoAlgorithm);
             var responseValidatorAltchaParser = new AltchaResponseParser(challengeFactory,
                                                                              responseValidatorSignatureParser);
-            
-            var configuration = new AltchaSha256Configuration()
+
+            var configuration = new AltchaSha256Configuration
             {
                 StoreFactory = null,
                 Key = AltchaKey.FromBytesApiKey(_key),
                 Complexity = null,
-                Expiry = default,
+                Expiry = default
             };
 
             var responseValidator = new ResponseValidator(storeFactory,

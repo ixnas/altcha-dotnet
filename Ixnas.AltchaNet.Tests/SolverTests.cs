@@ -251,10 +251,10 @@ namespace Ixnas.AltchaNet.Tests
 
         private AltchaSolver GetExpiryIgnoringSolver()
         {
-            return Altcha.CreateSolver(new AltchaSolverConfiguration()
-                                       {
-                                           IgnoreExpiry = true,
-                                       });
+            return Altcha.CreateSolver(new AltchaSolverConfiguration
+            {
+                IgnoreExpiry = true
+            });
         }
     }
 }
