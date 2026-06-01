@@ -8,12 +8,24 @@ namespace Ixnas.AltchaNet.Tests
 {
     public class SolverTests
     {
-        private readonly AltchaService _altchaService = Altcha.CreateServiceBuilder()
-                                                              .UseSha256(TestUtils.GetKey())
-                                                              .UseInMemoryStore()
-                                                              .SetComplexity(3, 4)
-                                                              .Build();
-        private readonly ClockFake _clock = new ClockFake();
+        private readonly AltchaService _altchaService;
+        private readonly ClockFake _clock;
+
+        public SolverTests()
+        {
+            _clock = new ClockFake();
+            var store = new InMemoryStore(_clock);
+            _altchaService = Altcha.CreateService(new AltchaSha256Configuration()
+            {
+                Key = AltchaKey.FromBytes(TestUtils.GetKey()),
+                StoreFactory = () => store,
+                Complexity = new AltchaDeterministicComplexity()
+                {
+                    Cost = 1,
+                    Counter = new AltchaComplexityCounterRange(3, 4)
+                }
+            });
+        }
 
         [Fact]
         public void GivenChallengeIsNull_WhenSolveCalled_ThrowsException()
@@ -104,12 +116,17 @@ namespace Ixnas.AltchaNet.Tests
         {
             const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.NoError;
 
-            var challenge = Altcha.CreateServiceBuilder()
-                                  .UseSha256(TestUtils.GetKey())
-                                  .UseInMemoryStore()
-                                  .SetComplexity(1, 1)
-                                  .UseInMemoryStore()
-                                  .Build()
+            var store = new InMemoryStore(_clock);
+            var challenge = Altcha.CreateService(new AltchaSha256Configuration()
+                                  {
+                                      Key = AltchaKey.FromBytes(TestUtils.GetKey()),
+                                      Complexity = new AltchaDeterministicComplexity()
+                                      {
+                                          Cost = 1,
+                                          Counter = new AltchaComplexityCounterRange(1, 1),
+                                      },
+                                      StoreFactory = () => store
+                                  })
                                   .Generate();
             var solver = GetDefaultSolver();
             var result = solver.Solve(challenge);
@@ -137,7 +154,6 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Api)]
         [InlineData(CommonServiceType.Default)]
         public async Task GivenValidChallengeIsSolved_WhenValidated_ThenReturnsPositiveResult(
             CommonServiceType serviceType)
@@ -182,7 +198,6 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Api)]
         [InlineData(CommonServiceType.Default)]
         public void GivenChallengeIsValid_WhenSolveCalled_ThenReturnsPositiveResult(
             CommonServiceType serviceType)
@@ -202,7 +217,6 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Api)]
         [InlineData(CommonServiceType.Default)]
         public void GivenChallengeHasExpired_WhenSolveCalled_ThenReturnsNegativeResult(
             CommonServiceType serviceType)
@@ -212,7 +226,7 @@ namespace Ixnas.AltchaNet.Tests
 
             _clock.SetOffsetInSeconds(-30);
             var service = TestUtils.ServiceFactories[serviceType]
-                                   .GetServiceWithExpiry(10, (IAltchaCancellableChallengeStore)null, _clock);
+                                   .GetServiceWithExpiry(10, null, _clock);
             var challenge = service.Generate();
             var solver = GetDefaultSolver();
             _clock.SetOffsetInSeconds(0);
@@ -224,7 +238,6 @@ namespace Ixnas.AltchaNet.Tests
         }
 
         [Theory]
-        [InlineData(CommonServiceType.Api)]
         [InlineData(CommonServiceType.Default)]
         public void GivenIgnoreExpiryIsSet_WhenSolvingExpiredChallengeCalled_ThenReturnsPositiveResult(
             CommonServiceType serviceType)
@@ -232,7 +245,7 @@ namespace Ixnas.AltchaNet.Tests
             const AltchaSolverErrorCode expectedErrorCode = AltchaSolverErrorCode.NoError;
 
             var service = TestUtils.ServiceFactories[serviceType]
-                                   .GetServiceWithExpiry(10, (IAltchaCancellableChallengeStore)null, _clock);
+                                   .GetServiceWithExpiry(10, null, _clock);
             _clock.SetOffsetInSeconds(-30);
             var challenge = service.Generate();
             _clock.SetOffsetInSeconds(0);

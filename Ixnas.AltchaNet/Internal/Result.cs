@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Ixnas.AltchaNet.Internal
+﻿namespace Ixnas.AltchaNet.Internal
 {
     internal class Result
     {
@@ -64,17 +62,6 @@ namespace Ixnas.AltchaNet.Internal
         {
             return new Result<TValue>
             {
-                Error = result.Error
-            };
-        }
-
-        public static Result<TValue> From<TInputValue>(Result<TInputValue> result,
-                                                       Func<TInputValue, TValue> valueConverter)
-        {
-            return new Result<TValue>
-            {
-                Success = result.Success,
-                Value = valueConverter(result.Value),
                 Error = result.Error
             };
         }

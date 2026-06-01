@@ -6,13 +6,12 @@ namespace Ixnas.AltchaNet.Tests
 {
     internal static class TestUtils
     {
-        public readonly static Dictionary<CommonServiceType, CommonServiceFactory> ServiceFactories =
-            new Dictionary<CommonServiceType, CommonServiceFactory>
+        public static readonly Dictionary<CommonServiceType, CommonServiceFactory> ServiceFactories =
+            new()
             {
                 [CommonServiceType.Default] = new CommonDefaultServiceFactory(),
-                [CommonServiceType.Api] = new CommonApiServiceFactory()
             };
-        public readonly static JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions
+        public static readonly JsonSerializerOptions JsonSerializerOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };

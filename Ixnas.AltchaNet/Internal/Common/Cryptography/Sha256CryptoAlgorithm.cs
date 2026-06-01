@@ -8,22 +8,13 @@ namespace Ixnas.AltchaNet.Internal.Common.Cryptography
 
         public byte[] Hash(byte[] bytes)
         {
-#if NET8_0_OR_GREATER
             return SHA256.HashData(bytes);
-#else
-            using (var sha = new SHA256Managed())
-            {
-                return sha.ComputeHash(bytes);
-            }
-#endif
         }
 
         public byte[] Sign(byte[] bytes, AltchaKey key)
         {
-            using (var sha = new HMACSHA256(key.Bytes))
-            {
-                return sha.ComputeHash(bytes);
-            }
+            using var sha = new HMACSHA256(key.Bytes);
+            return sha.ComputeHash(bytes);
         }
     }
 }

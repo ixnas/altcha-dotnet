@@ -5,7 +5,7 @@ namespace Ixnas.AltchaNet
     /// <summary>
     ///     Represents the time after which a generated challenge expires.
     /// </summary>
-    public readonly struct AltchaExpiry
+    public sealed record AltchaExpiry
     {
         /// <summary>
         ///     Expiry in seconds.

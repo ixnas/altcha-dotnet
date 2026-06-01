@@ -1,4 +1,3 @@
-using System;
 using Ixnas.AltchaNet.Debug;
 using Ixnas.AltchaNet.Internal.Common.Cryptography;
 using Ixnas.AltchaNet.Internal.Common.Salt;
@@ -6,13 +5,12 @@ using Ixnas.AltchaNet.Internal.Common.Serialization;
 using Ixnas.AltchaNet.Internal.Common.Utilities;
 using Ixnas.AltchaNet.Internal.Solving;
 
-namespace Ixnas.AltchaNet
+namespace Ixnas.AltchaNet.Internal
 {
     /// <summary>
     ///     Builds an ALTCHA solver instance.
     /// </summary>
-    [Obsolete("Will be removed in the next major version. Please use Altcha.CreateSolver() instead.")]
-    public sealed class AltchaSolverBuilder
+    internal sealed class AltchaSolverBuilder
     {
         private readonly Clock _clock = new DefaultClock();
         private readonly bool _ignoreExpiry;

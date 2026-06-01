@@ -11,11 +11,6 @@ internal class AltchaChallengeStore : IAltchaChallengeStore
         _dbContext = dbContext;
     }
 
-    public async Task Store(string challenge, DateTimeOffset expiryUtc)
-    {
-        await Store(challenge, expiryUtc, CancellationToken.None);
-    }
-
     public async Task Store(string challenge, DateTimeOffset expiryUtc, CancellationToken cancellationToken)
     {
         var verifiedChallenge = new VerifiedChallenge
@@ -25,11 +20,6 @@ internal class AltchaChallengeStore : IAltchaChallengeStore
         };
         _dbContext.VerifiedChallenges.Add(verifiedChallenge);
         await _dbContext.SaveChangesAsync(cancellationToken);
-    }
-
-    public async Task<bool> Exists(string challenge)
-    {
-        return await Exists(challenge, CancellationToken.None);
     }
 
     public async Task<bool> Exists(string challenge, CancellationToken cancellationToken)

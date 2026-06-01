@@ -7,11 +7,7 @@ namespace Ixnas.AltchaNet
     /// <summary>
     ///     Represents the secret key that is used for generating and validating challenges.
     /// </summary>
-#if NET8_0_OR_GREATER
     public sealed record AltchaKey
-#else
-    public sealed class AltchaKey
-#endif
     {
         internal byte[] Bytes { get; private set; }
 
@@ -30,14 +26,6 @@ namespace Ixnas.AltchaNet
             Guard.NotNull(bytes);
             if (bytes.Length < Defaults.RequiredKeySize)
                 throw new InvalidKeyException();
-            return new AltchaKey
-            {
-                Bytes = bytes
-            };
-        }
-
-        internal static AltchaKey FromBytesApiKey(byte[] bytes)
-        {
             return new AltchaKey
             {
                 Bytes = bytes

@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Ixnas.AltchaNet.Exceptions;
 using Ixnas.AltchaNet.Internal.Common.Serialization;
 using Ixnas.AltchaNet.Internal.Common.Utilities;
 using Ixnas.AltchaNet.Internal.ProofOfWork.Validation;
@@ -43,22 +44,21 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
             Guard.NotNull(altchaResponse);
 
             var store = _storeFactory();
-            // stryker disable once nullcoalescing: Fails for .NET Framework
-            var storeAdapter = store as ChallengeStoreAdapter ?? new ChallengeStoreAdapter(store);
+            Guard.NotNull<MissingStoreException>(store);
 
-            var validationResult = await IsValidResponse(altchaResponse, storeAdapter, cancellationToken);
+            var validationResult = await IsValidResponse(altchaResponse, store, cancellationToken);
             if (!validationResult.Success)
                 return validationResult.Error.ToValidationResult();
 
             var altcha = validationResult.Value;
-            await storeAdapter.Store(altcha.Challenge, altcha.ExpiryUtc, cancellationToken);
+            await store.Store(altcha.Challenge, altcha.ExpiryUtc, cancellationToken);
 
             return Error.Create(ErrorCode.NoError)
                         .ToValidationResult();
         }
 
         private async Task<Result<Validation.AltchaResponse>> IsValidResponse(AltchaResponse altchaResponse,
-            ChallengeStoreAdapter store,
+            IAltchaChallengeStore store,
             CancellationToken cancellationToken)
         {
             var parseResult = _altchaResponseParser.Parse(altchaResponse);

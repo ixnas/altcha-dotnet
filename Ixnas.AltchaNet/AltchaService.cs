@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Ixnas.AltchaNet.Internal.Common.Utilities;
 using Ixnas.AltchaNet.Internal.ProofOfWork;
 
 namespace Ixnas.AltchaNet
@@ -26,45 +25,7 @@ namespace Ixnas.AltchaNet
         /// </summary>
         public AltchaChallenge Generate()
         {
-            return _challengeGenerator.Generate(configuration => configuration);
-        }
-
-        /// <summary>
-        ///     Generates a new ALTCHA challenge.
-        /// </summary>
-        /// <param name="overrides">Configuration overrides applied to only this generation.</param>
-        /// <returns></returns>
-        [Obsolete("Will be removed in the next major version. Please use Generate(Func<AltchaSha256Configuration, AltchaSha256Configuration>) instead.")]
-        public AltchaChallenge Generate(AltchaGenerateChallengeOverrides overrides)
-        {
-            Guard.NotNull(overrides);
-#if NET8_0_OR_GREATER
-            return _challengeGenerator.Generate((configuration) => configuration with
-            {
-                Complexity = overrides.Complexity.HasValue
-                                 ? configuration.Complexity with
-                                 {
-                                     Counter =
-                                     new AltchaComplexityCounterRange(overrides.Complexity.Value.Min,
-                                         overrides.Complexity.Value.Max),
-                                 }
-                                 : configuration.Complexity,
-                Expiry = overrides.Expiry ?? configuration.Expiry
-            });
-#else
-            return _challengeGenerator.Generate(configuration =>
-            {
-                if (overrides.Complexity.HasValue)
-                    configuration.Complexity.Counter =
-                        new AltchaComplexityCounterRange(overrides.Complexity.Value.Min,
-                                                         overrides.Complexity.Value.Max);
-
-                if (overrides.Expiry.HasValue)
-                    configuration.Expiry = overrides.Expiry.Value;
-
-                return configuration;
-            });
-#endif
+            return Generate(configuration => configuration);
         }
 
         /// <summary>
@@ -85,7 +46,7 @@ namespace Ixnas.AltchaNet
         /// <returns>A result object representing the result of the validation.</returns>
         public async Task<AltchaValidationResult> Validate(string altchaBase64)
         {
-            return await _responseValidator.Validate(altchaBase64, CancellationToken.None);
+            return await Validate(altchaBase64, CancellationToken.None);
         }
 
         /// <summary>
@@ -107,7 +68,7 @@ namespace Ixnas.AltchaNet
         /// <returns>A result object representing the result of the validation.</returns>
         public async Task<AltchaValidationResult> Validate(AltchaResponse altchaResponse)
         {
-            return await _responseValidator.Validate(altchaResponse, CancellationToken.None);
+            return await Validate(altchaResponse, CancellationToken.None);
         }
 
         /// <summary>

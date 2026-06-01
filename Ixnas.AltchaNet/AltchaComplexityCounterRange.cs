@@ -5,11 +5,7 @@ namespace Ixnas.AltchaNet
     /// <summary>
     ///     Represents the counter range for the complexity of generating ALTCHA challenges.
     /// </summary>
-#if NET8_0_OR_GREATER
     public sealed record AltchaComplexityCounterRange
-#else
-    public sealed class AltchaComplexityCounterRange
-#endif
     {
         internal int Min { get; }
         internal int Max { get; }
