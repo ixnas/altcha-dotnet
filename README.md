@@ -101,7 +101,7 @@ public class InMemoryStore : IAltchaChallengeStore
 
     private readonly List<StoredChallenge> _stored = new List<StoredChallenge>();
 
-    public Task Store(string challenge, DateTimeOffset expiryUtc)
+    public Task Store(string challenge, DateTimeOffset expiryUtc, CancellationToken cancellationToken)
     {
         var challengeToStore = new StoredChallenge
         {
@@ -112,7 +112,7 @@ public class InMemoryStore : IAltchaChallengeStore
         return Task.CompletedTask;
     }
 
-    public Task<bool> Exists(string challenge)
+    public Task<bool> Exists(string challenge, CancellationToken cancellationToken)
     {
         _stored.RemoveAll(storedChallenge => storedChallenge.ExpiryUtc <= DateTimeOffset.UtcNow);
         var exists = _stored.Exists(storedChallenge => storedChallenge.Challenge == challenge);
@@ -144,7 +144,6 @@ a [dynamic complexity](https://altcha.org/docs/v2/complexity/#recommended-practi
 strategy, for example.
 
 ```csharp
-// .NET 8 or newer
 var challenge = altchaService.Generate(configuration => configuration with
 {
     Complexity = configuration.Complexity with 
@@ -153,18 +152,6 @@ var challenge = altchaService.Generate(configuration => configuration with
     },
     Expiry = AltchaExpiry.FromSeconds(300),
 });
-
-// .NET Framework or .NET Standard
-var challenge = altchaService.Generate(configuration => 
-{
-    configuration.Complexity = new AltchaDeterministicComplexity()
-    {
-        Counter = new AltchaComplexityCounterRange(200000, 300000),
-        Cost = configuration.Complexity.Cost,
-    };
-    configuration.Expiry = AltchaExpiry.FromSeconds(300);
-    return configuration;
-})
 ```
 
 The updated configuration will be used for this single call only.
@@ -208,10 +195,9 @@ var altchaSolver = Altcha.CreateSolver(new AltchaSolverConfiguration()
 
 Here is a description of the different configuration options.
 
-| Method           | Description                                                                     |
+| Property         | Description                                                                     |
 |------------------|---------------------------------------------------------------------------------|
-| `IgnoreExpiry()` | (Optional) Disables checking for expiry before attempting to solve a challenge. |
-| `Build()`        | Returns a new configured solver instance.                                       |
+| `IgnoreExpiry` | (Optional) Disables checking for expiry before attempting to solve a challenge. |
 
 ### Usage
 
@@ -248,6 +234,3 @@ try to respond as soon as I can.
 ## License
 
 See [LICENSE.txt](https://github.com/ixnas/altcha-dotnet/blob/main/LICENSE.txt)
-
-See [LICENSE-ALTCHA.txt](https://github.com/ixnas/altcha-dotnet/blob/main/LICENSE-ALTCHA.txt) for ALTCHA's original
-license.
