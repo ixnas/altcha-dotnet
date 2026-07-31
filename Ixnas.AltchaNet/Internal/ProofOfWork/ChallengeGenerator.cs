@@ -39,7 +39,7 @@ namespace Ixnas.AltchaNet.Internal.ProofOfWork
 
             var salt = _saltGenerator.Generate(configuration.Expiry);
             var secretNumber = _randomNumberGenerator.Generate(configuration.Complexity.Counter);
-            var maxNumber = _randomNumberGenerator.Max;
+            var maxNumber = configuration.Complexity.Counter.Max;
             var challenge = _challengeStringGenerator.Generate(salt.Raw, secretNumber);
             var signature = _signatureGenerator.Generate(challenge, configuration.Key)
                                                .ToHexString();

@@ -77,6 +77,7 @@ namespace Ixnas.AltchaNet.Tests
         [Theory]
         [InlineData(0, 1)]
         [InlineData(10, 20)]
+        [InlineData(120, 130)]
         public void
             GivenCustomComplexityWithOverrides_WhenCallingValidateMultipleTimes_ReturnsResultWithNumberInRange(
                 int min,

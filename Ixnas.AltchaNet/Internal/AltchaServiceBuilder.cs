@@ -49,7 +49,7 @@ namespace Ixnas.AltchaNet.Internal
         public AltchaService Build()
         {
             var serializer = new SystemTextJsonSerializer();
-            var secretNumberGenerator = new RandomNumberGenerator(_complexity.Counter);
+            var secretNumberGenerator = new RandomNumberGenerator();
             var cryptoAlgorithm = new Sha256CryptoAlgorithm();
             var saltGenerator = new SaltGenerator(_clock,
                                                   _expiry);
