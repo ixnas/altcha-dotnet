@@ -83,8 +83,10 @@ namespace Ixnas.AltchaNet.Tests
         [Theory]
         [InlineData(0, 1, OverrideMethod.Deprecated)]
         [InlineData(10, 20, OverrideMethod.Deprecated)]
+        [InlineData(120, 130, OverrideMethod.Deprecated)]
         [InlineData(0, 1, OverrideMethod.ConfigurationRecord)]
         [InlineData(10, 20, OverrideMethod.ConfigurationRecord)]
+        [InlineData(120, 130, OverrideMethod.ConfigurationRecord)]
         public void
             GivenCustomComplexityWithOverrides_WhenCallingValidateMultipleTimes_ReturnsResultWithNumberInRange(
                 int min,
