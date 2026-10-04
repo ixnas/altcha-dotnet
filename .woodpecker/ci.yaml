@@ -17,8 +17,8 @@ steps:
     when:
       - event: [push, tag]
     image: mcr.microsoft.com/dotnet/sdk:${FRAMEWORK}
+    pull: true
     commands:
-      - dotnet --list-sdks
       - dotnet build Ixnas.AltchaNet -p:TargetFrameworks=net${FRAMEWORK}
       - dotnet build Ixnas.AltchaNet.Tests -p:TargetFrameworks=net${FRAMEWORK}
 
@@ -35,13 +35,16 @@ steps:
         matrix:
           FRAMEWORK: 10.0
     image: mcr.microsoft.com/dotnet/sdk:${FRAMEWORK}
+    pull: true
     commands:
+      - git fetch origin main
       - export PATH="$PATH:/root/.dotnet/tools"
       - dotnet tool install -g dotnet-stryker
       - dotnet stryker -c 4 --target-framework net${FRAMEWORK} --since:main
 
   - name: package
     image: mcr.microsoft.com/dotnet/sdk:${FRAMEWORK}
+    pull: true
     when:
       - event: [push, tag]
         matrix:
@@ -49,8 +52,6 @@ steps:
     commands:
       - export GIT_VERSION=$(git describe --tags)
       - export GIT_LAST_TAG=$(git describe --tags --abbrev=0)
-      - echo $GIT_VERSION
-      - echo $GIT_LAST_TAG
       - mkdir -p artifacts
       - dotnet pack Ixnas.AltchaNet -o artifacts -p:PackageVersion=$GIT_VERSION -p:AssemblyVersion=$GIT_LAST_TAG -p:InformationalVersion=$GIT_LAST_TAG -p:ContinuousIntegrationBuild=true -p:EmbedUntrackedSources=true
 
@@ -60,6 +61,7 @@ steps:
         matrix:
           FRAMEWORK: 10.0
     image: vividboarder/drone-webdav
+    pull: true
     settings:
       file: artifacts/Ixnas.AltchaNet.${CI_COMMIT_TAG}.nupkg
       destination: https://cloud.sjoerdscheffer.nl/remote.php/dav/files/sjoerd/Software/Releases/altcha-dotnet/
