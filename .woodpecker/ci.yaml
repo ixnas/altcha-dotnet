@@ -1,0 +1,69 @@
+clone:
+ - name: clone
+   image: woodpeckerci/plugin-git
+   settings:
+     partial: false
+     depth: 0
+     tags: true
+
+matrix:
+  FRAMEWORK:
+    - 8.0
+    - 9.0
+    - 10.0
+
+steps:
+  - name: build
+    when:
+      - event: [push, tag]
+    image: mcr.microsoft.com/dotnet/sdk:${FRAMEWORK}
+    commands:
+      - dotnet --list-sdks
+      - dotnet build Ixnas.AltchaNet -p:TargetFrameworks=net${FRAMEWORK}
+      - dotnet build Ixnas.AltchaNet.Tests -p:TargetFrameworks=net${FRAMEWORK}
+
+  - name: unit-tests
+    when:
+      - event: [push, tag]
+    image: mcr.microsoft.com/dotnet/sdk:${FRAMEWORK}
+    commands:
+      - dotnet test --no-build -p:TargetFrameworks=net${FRAMEWORK}
+
+  - name: mutation-tests
+    when:
+      - event: [push, tag]
+        matrix:
+          FRAMEWORK: 10.0
+    image: mcr.microsoft.com/dotnet/sdk:${FRAMEWORK}
+    commands:
+      - export PATH="$PATH:/root/.dotnet/tools"
+      - dotnet tool install -g dotnet-stryker
+      - dotnet stryker -c 4 --target-framework net${FRAMEWORK} --since:main
+
+  - name: package
+    image: mcr.microsoft.com/dotnet/sdk:${FRAMEWORK}
+    when:
+      - event: [push, tag]
+        matrix:
+          FRAMEWORK: 10.0
+    commands:
+      - export GIT_VERSION=$(git describe --tags)
+      - export GIT_LAST_TAG=$(git describe --tags --abbrev=0)
+      - echo $GIT_VERSION
+      - echo $GIT_LAST_TAG
+      - mkdir -p artifacts
+      - dotnet pack Ixnas.AltchaNet -o artifacts -p:PackageVersion=$GIT_VERSION -p:AssemblyVersion=$GIT_LAST_TAG -p:InformationalVersion=$GIT_LAST_TAG -p:ContinuousIntegrationBuild=true -p:EmbedUntrackedSources=true
+
+  - name: publish
+    when:
+      - event: tag
+        matrix:
+          FRAMEWORK: 10.0
+    image: vividboarder/drone-webdav
+    settings:
+      file: artifacts/Ixnas.AltchaNet.${CI_COMMIT_TAG}.nupkg
+      destination: https://cloud.sjoerdscheffer.nl/remote.php/dav/files/sjoerd/Software/Releases/altcha-dotnet/
+      username:
+        from_secret: WEBDAV_USER
+      password:
+        from_secret: WEBDAV_PASSWORD

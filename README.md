@@ -1,7 +1,8 @@
 # Altcha.NET
 
-[![Build status](https://ci.sjoerdscheffer.nl/job/Altcha.NET/job/main/badge/icon?style=flat-square)](https://ci.sjoerdscheffer.nl/job/Altcha.NET/job/main/)
-[![Nuget version](https://ci.sjoerdscheffer.nl/job/Altcha.NET/job/main/badge/icon?config=nugetBadge&style=flat-square)](https://www.nuget.org/packages/Ixnas.AltchaNet)
+[![NuGet Version](https://img.shields.io/nuget/v/Ixnas.AltchaNet)](https://www.nuget.org/packages/Ixnas.AltchaNet/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Ixnas.AltchaNet)](https://www.nuget.org/packages/Ixnas.AltchaNet/)
+[![Build status](https://ci.sjoerdscheffer.nl/api/badges/1/status.svg)](https://ci.sjoerdscheffer.nl/repos/1)
 
 C# implementation of the [ALTCHA](http://altcha.org) challenge.
 
