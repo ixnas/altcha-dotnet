@@ -11,6 +11,9 @@
     ],
     "report-file-name": "mutation-tests",
     "break-on-initial-test-failure": false,
-    "target-framework": "net8.0"
+    "target-framework": "net8.0",
+    "since": {
+      "ignore-changes-in": ['/README.md', '/.woodpecker/*']
+    }
   }
 }
