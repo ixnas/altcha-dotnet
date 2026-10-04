@@ -39,8 +39,9 @@ steps:
     commands:
       - git fetch origin main
       - export PATH="$PATH:/root/.dotnet/tools"
+      - if [ "${CI_COMMIT_BRANCH}" = "main" ]; then export SINCE=${CI_PREV_COMMIT_SHA}; else export SINCE=main; fi 
       - dotnet tool install -g dotnet-stryker
-      - dotnet stryker -c 4 --target-framework net${FRAMEWORK} --since:main
+      - dotnet stryker -c 4 --target-framework net${FRAMEWORK} --since:$SINCE
 
   - name: package
     image: mcr.microsoft.com/dotnet/sdk:${FRAMEWORK}
