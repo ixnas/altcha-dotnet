@@ -209,10 +209,9 @@ var altchaSolver = Altcha.CreateSolver(new AltchaSolverConfiguration()
 
 Here is a description of the different configuration options.
 
-| Method           | Description                                                                     |
-|------------------|---------------------------------------------------------------------------------|
-| `IgnoreExpiry()` | (Optional) Disables checking for expiry before attempting to solve a challenge. |
-| `Build()`        | Returns a new configured solver instance.                                       |
+| Property       | Description                                                                     |
+|----------------|---------------------------------------------------------------------------------|
+| `IgnoreExpiry` | (Optional) Disables checking for expiry before attempting to solve a challenge. |
 
 ### Usage
 
